@@ -20,17 +20,17 @@
 <body class="bg-blue-50 min-h-screen">
     <div class="container mx-auto px-4 py-12 max-w-4xl">
         <div class="bg-white rounded-xl shadow-lg p-8">
-            <h1 class="text-3xl font-bold text-center text-blue-600 mb-8">Arabic Text Translator 🌍</h1>
+            <h1 class="text-3xl font-bold text-center text-blue-600 mb-8">Tarjama</h1>
             <div class="mb-6">
                 <div class="flex justify-between items-center mb-2">
                     <label class="block text-sm font-medium text-gray-700">Enter Text to Translate:</label>
                     <div class="flex space-x-2">
-                        <button type="button" id="startRecognition" class="flex items-center text-sm text-blue-600 hover:text-blue-800 px-3 py-1 rounded-md hover:bg-blue-50">
+                        <button type="button" id="startRecognition" class="flex items-center text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-2 rounded-md transition-colors">
                             <i class="fas fa-microphone mr-1"></i> Speak
                         </button>
-                        <label class="flex items-center text-sm text-green-600 hover:text-green-800 px-3 py-1 rounded-md hover:bg-green-50 cursor-pointer">
-                            <i class="fas fa-upload mr-1"></i> Upload WAV
-                            <input type="file" id="audioUpload" accept=".wav" class="hidden">
+                        <label class="flex items-center text-sm bg-green-100 hover:bg-green-200 text-green-800 px-3 py-2 rounded-md transition-colors cursor-pointer">
+                            <i class="fas fa-upload mr-1"></i> Upload File
+                            <input type="file" id="audioUpload" class="hidden">
                         </label>
                     </div>
                 </div>
@@ -44,7 +44,7 @@
                         <i class="fas fa-spinner fa-spin mr-1"></i> Processing...
                     </div>
                 </div>
-                <p class="mt-1 text-xs text-gray-500">Or upload a WAV file (max 16MB)</p>
+                <p class="mt-1 text-xs text-gray-500">Supported formats: All audio file types (max 16MB)</p>
             </div>
 
             <div class="flex flex-col sm:flex-row gap-4 mb-6">
@@ -99,9 +99,9 @@
                     return;
                 }
                 
-                // Validate file type
-                if (!file.name.toLowerCase().endsWith('.wav')) {
-                    showNotification('Only WAV files are allowed', 'error');
+                // Accept all audio file types
+                if (!file.type.startsWith('audio/')) {
+                    showNotification('Please upload an audio file.', 'error');
                     this.value = ''; // Clear the file input
                     uploadStatus.classList.add('hidden');
                     return;
@@ -111,37 +111,29 @@
                     const formData = new FormData();
                     formData.append('audio', file);
                     
-                    const response = await fetch('http://localhost:5000/transcribe', {
+                    const response = await fetch('/transcribe', {
                         method: 'POST',
-                        mode: 'cors',
-                        cache: 'no-cache',
-                        credentials: 'same-origin',
-                        redirect: 'follow',
-                        referrerPolicy: 'no-referrer',
                         body: formData
                     });
                     
-                    if (!response.ok) {
-                        let errorMessage = 'Transcription failed';
-                        try {
-                            const errorData = await response.json();
-                            errorMessage = errorData.error || errorMessage;
-                        } catch (e) {
-                            console.error('Error parsing error response:', e);
-                        }
-                        throw new Error(errorMessage);
-                    }
-                    
                     const result = await response.json();
-                    if (result.error) {
-                        throw new Error(result.error);
+                    
+                    if (!response.ok) {
+                        throw new Error(result.error || 'Failed to process the audio file');
                     }
                     
                     document.getElementById('inputText').value = result.text || '';
+                    showNotification('Audio transcribed successfully!', 'success');
+                    
+                    // Auto-translate the extracted text
+                    if (result.text && result.text.trim() !== '') {
+                        translateBtn.click();
+                    }
                 } catch (error) {
                     console.error('Upload error:', error);
-                    showNotification(error.message || 'Error processing audio file. Please try again.', 'error');
-                    this.value = ''; // Clear the file input on error
+                    showNotification(error.message || 'Error processing file. Please try again.', 'error');
+                } finally {
+                    this.value = ''; // Clear the file input
                     uploadStatus.classList.add('hidden');
                 }
             });
