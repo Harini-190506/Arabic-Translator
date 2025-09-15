@@ -15,6 +15,21 @@
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
+        .upload-btn-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .upload-btn-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="bg-blue-50 min-h-screen">
@@ -24,35 +39,28 @@
             <div class="mb-6">
                 <div class="flex justify-between items-center mb-2">
                     <label class="block text-sm font-medium text-gray-700">Enter Text to Translate:</label>
-                    <div class="flex space-x-2">
-                        <button type="button" id="startRecognition" class="flex items-center text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-2 rounded-md transition-colors">
-                            <i class="fas fa-microphone mr-1"></i> Speak
+                    <div class="upload-btn-wrapper">
+                        <button id="uploadBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm flex items-center">
+                            <i class="fas fa-upload mr-2"></i> Upload Audio
                         </button>
-                        <label class="flex items-center text-sm bg-green-100 hover:bg-green-200 text-green-800 px-3 py-2 rounded-md transition-colors cursor-pointer">
-                            <i class="fas fa-upload mr-1"></i> Upload File
-                            <input type="file" id="audioUpload" class="hidden">
-                        </label>
+                        <input type="file" id="audioUpload" accept="audio/*" class="hidden">
                     </div>
                 </div>
                 <div class="relative">
                     <textarea id="inputText" rows="6" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Type or paste your text here..."></textarea>
-                    <div id="recordingIndicator" class="hidden absolute top-2 right-2 flex items-center bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs">
-                        <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-1"></span>
-                        Listening...
-                    </div>
                     <div id="uploadStatus" class="hidden absolute top-2 right-2 flex items-center bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
                         <i class="fas fa-spinner fa-spin mr-1"></i> Processing...
                     </div>
                 </div>
-                <p class="mt-1 text-xs text-gray-500">Supported formats: All audio file types (max 16MB)</p>
+                <p class="mt-1 text-xs text-gray-500">Supported formats: MP3, WAV, OGG, M4A, FLAC, AAC (max 16MB)</p>
             </div>
 
             <div class="flex flex-col sm:flex-row gap-4 mb-6">
                 <div class="flex-1">
                     <label for="language" class="block text-sm font-medium text-gray-700 mb-2">Translate to:</label>
                     <select id="language" class="language-select w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        {% for lang in languages %}
-                        <option value="{{ lang }}">{{ lang }}</option>
+                        {% for lang, code in languages.items() %}
+                        <option value="{{ code }}">{{ lang }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -63,10 +71,10 @@
                 </div>
             </div>
 
-            <div>
-                <label for="outputText" class="block text-sm font-medium text-gray-700 mb-2">Translated Text:</label>
-                <div id="outputText" class="w-full min-h-[150px] p-4 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
-                    <p class="text-gray-400 italic">Translation will appear here...</p>
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Translation:</label>
+                <div id="outputText" class="min-h-32 bg-white border border-gray-300 rounded-lg p-4 text-justify">
+                    <!-- Translated text will appear here -->
                 </div>
             </div>
 
@@ -80,30 +88,118 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // File upload handler
+            // Language mapping
+            const LANGUAGE_NAMES = {
+                'en': 'English',
+                'ar': 'Arabic',
+                'fr': 'French',
+                'es': 'Spanish',
+                'de': 'German',
+                'it': 'Italian',
+                'pt': 'Portuguese',
+                'ru': 'Russian',
+                'zh': 'Chinese',
+                'ja': 'Japanese',
+                'ko': 'Korean',
+                'hi': 'Hindi',
+                'bn': 'Bengali',
+                'tr': 'Turkish',
+                'nl': 'Dutch',
+                'el': 'Greek',
+                'he': 'Hebrew',
+                'th': 'Thai',
+                'vi': 'Vietnamese'
+            };
+
+            const inputText = document.getElementById('inputText');
+            const outputText = document.getElementById('outputText');
+            const translateBtn = document.getElementById('translateBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const languageSelect = document.getElementById('language');
             const audioUpload = document.getElementById('audioUpload');
             const uploadStatus = document.getElementById('uploadStatus');
-            
+
+            // Handle translation
+            async function translateText() {
+                const text = inputText.value.trim();
+                const targetLang = languageSelect.value;
+                
+                if (!text) {
+                    showNotification('Please enter some text to translate', 'error');
+                    return;
+                }
+
+                setLoading(true);
+                outputText.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-500 text-2xl"></i><p class="mt-2 text-gray-600">Translating...</p></div>';
+                
+                try {
+                    const response = await fetch('/translate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            text: text,
+                            language: targetLang
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        // Only show the translated text
+                        outputText.innerHTML = `
+                            <div class="translation-result">
+                                <p class="whitespace-pre-wrap text-justify">${data.translated_text}</p>
+                            </div>
+                        `;
+                        
+                        showNotification('Translation completed!', 'success');
+                    } else {
+                        throw new Error(data.error || 'Failed to translate text');
+                    }
+                } catch (error) {
+                    console.error('Translation error:', error);
+                    outputText.innerHTML = `
+                        <div class="bg-red-50 p-4 rounded-lg">
+                            <h3 class="text-sm font-medium text-red-600 mb-2">Error:</h3>
+                            <p class="text-red-700">${error.message || 'Failed to translate text. Please try again.'}</p>
+                        </div>
+                    `;
+                    showNotification('Translation failed. Please try again.', 'error');
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            // Handle audio file upload
             audioUpload.addEventListener('change', async function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
                 
                 // Show processing status
                 uploadStatus.classList.remove('hidden');
+                uploadStatus.textContent = 'Processing audio...';
                 
-                // Validate file size (16MB)
-                if (file.size > 16 * 1024 * 1024) {
-                    showNotification('File size exceeds 16MB limit', 'error');
-                    this.value = ''; // Clear the file input
+                console.log('Selected file type:', file.type); // Debug log
+                
+                // Basic file extension check
+                const allowedExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac'];
+                const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+                
+                if (!allowedExtensions.includes(fileExt)) {
+                    showNotification('Unsupported file type. Please upload an audio file (MP3, WAV, OGG, M4A, FLAC, AAC)', 'error');
                     uploadStatus.classList.add('hidden');
+                    this.value = ''; // Clear the file input
                     return;
                 }
-                
-                // Accept all audio file types
-                if (!file.type.startsWith('audio/')) {
-                    showNotification('Please upload an audio file.', 'error');
-                    this.value = ''; // Clear the file input
+
+                // Validate file size (16MB)
+                const maxSize = 16 * 1024 * 1024; // 16MB
+                if (file.size > maxSize) {
+                    showNotification('File size exceeds 16MB limit', 'error');
                     uploadStatus.classList.add('hidden');
+                    this.value = ''; // Clear the file input
                     return;
                 }
                 
@@ -118,171 +214,64 @@
                     
                     const result = await response.json();
                     
-                    if (!response.ok) {
-                        throw new Error(result.error || 'Failed to process the audio file');
-                    }
-                    
-                    document.getElementById('inputText').value = result.text || '';
-                    showNotification('Audio transcribed successfully!', 'success');
-                    
-                    // Auto-translate the extracted text
-                    if (result.text && result.text.trim() !== '') {
-                        translateBtn.click();
+                    if (response.ok && result.status === 'success' && result.text) {
+                        // Set the transcribed text in the input field
+                        inputText.value = result.text;
+                        
+                        // Apply RTL style if the text is in Arabic
+                        const isArabic = /[\u0600-\u06FF]/.test(result.text);
+                        if (isArabic) {
+                            inputText.style.direction = 'rtl';
+                            inputText.style.textAlign = 'right';
+                        } else {
+                            inputText.style.direction = 'ltr';
+                            inputText.style.textAlign = 'left';
+                        }
+                        
+                        showNotification('Audio transcribed! Click Translate to translate.', 'success');
+                    } else {
+                        throw new Error(result.error || 'Failed to transcribe audio');
                     }
                 } catch (error) {
                     console.error('Upload error:', error);
-                    showNotification(error.message || 'Error processing file. Please try again.', 'error');
+                    showNotification(error.message || 'Error processing audio file. Please try again.', 'error');
                 } finally {
-                    this.value = ''; // Clear the file input
                     uploadStatus.classList.add('hidden');
+                    this.value = ''; // Clear the file input
                 }
             });
+
+            // Event listeners
+            translateBtn.addEventListener('click', translateText);
             
-            // Check if browser supports speech recognition
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            let recognition = null;
-            let isListening = false;
+            // Add click handler for the upload button
+            document.getElementById('uploadBtn').addEventListener('click', function() {
+                document.getElementById('audioUpload').click();
+            });
             
-            if (SpeechRecognition) {
-                recognition = new SpeechRecognition();
-                recognition.continuous = true;
-                recognition.interimResults = true;
-                recognition.lang = 'ar'; // Default to Arabic
-                
-                recognition.onresult = function(event) {
-                    let interimTranscript = '';
-                    let finalTranscript = '';
-                    
-                    for (let i = event.resultIndex; i < event.results.length; i++) {
-                        const transcript = event.results[i][0].transcript;
-                        if (event.results[i].isFinal) {
-                            finalTranscript += transcript + ' ';
-                        } else {
-                            interimTranscript += transcript;
-                        }
-                    }
-                    
-                    const currentText = inputText.value;
-                    inputText.value = currentText + finalTranscript || interimTranscript;
-                };
-                
-                recognition.onerror = function(event) {
-                    console.error('Speech recognition error', event.error);
-                    showNotification('Error: ' + event.error, 'error');
-                    stopRecognition();
-                };
-                
-                recognition.onend = function() {
-                    if (isListening) {
-                        // Restart recognition if it was manually stopped
-                        recognition.start();
-                    }
-                };
-                
-                function startRecognition() {
-                    try {
-                        recognition.start();
-                        isListening = true;
-                        startButton.innerHTML = '<i class="fas fa-microphone-slash mr-1"></i> Stop';
-                        recordingIndicator.classList.remove('hidden');
-                        showNotification('Listening... Speak now.', 'info');
-                    } catch (e) {
-                        console.error('Speech recognition start error:', e);
-                        showNotification('Could not start speech recognition. Please try again.', 'error');
-                    }
-                }
-                
-                function stopRecognition() {
-                    isListening = false;
-                    recognition.stop();
-                    startButton.innerHTML = '<i class="fas fa-microphone mr-1"></i> Speak';
-                    recordingIndicator.classList.add('hidden');
-                }
-                
-                const startButton = document.getElementById('startRecognition');
-                const recordingIndicator = document.getElementById('recordingIndicator');
-                
-                startButton.addEventListener('click', function() {
-                    if (!isListening) {
-                        startRecognition();
-                    } else {
-                        stopRecognition();
-                    }
-                });
-                
-                // Stop recognition when clicking outside
-                document.addEventListener('click', function(event) {
-                    if (isListening && !startButton.contains(event.target)) {
-                        stopRecognition();
-                    }
-                });
-            } else {
-                // Hide the button if speech recognition is not supported
-                document.getElementById('startRecognition').style.display = 'none';
-            }
-            const inputText = document.getElementById('inputText');
-            const outputText = document.getElementById('outputText');
-            const translateBtn = document.getElementById('translateBtn');
-            const clearBtn = document.getElementById('clearBtn');
-            const languageSelect = document.getElementById('language');
-            
-            // Show loading state
+            clearBtn.addEventListener('click', function() {
+                inputText.value = '';
+                outputText.innerHTML = '';
+                showNotification('Cleared all text', 'info');
+            });
+
+            // Set loading state
             function setLoading(isLoading) {
-                translateBtn.disabled = isLoading;
-                translateBtn.innerHTML = isLoading 
-                    ? '<i class="fas fa-spinner fa-spin mr-2"></i> Translating...' 
-                    : '<i class="fas fa-exchange-alt mr-2"></i> Translate';
-            }
-
-            // Handle translation
-            async function translateText() {
-                const text = inputText.value.trim();
-                if (!text) {
-                    showNotification('Please enter some text to translate', 'error');
-                    return;
-                }
-
-                setLoading(true);
-                outputText.innerHTML = '<p class="text-gray-500 italic">Translating...</p>';
-
-                try {
-                    const response = await fetch('/translate', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            text: text,
-                            language: languageSelect.value
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        outputText.innerHTML = `<p>${data.translated_text}</p>`;
-                        showNotification('Translation successful!', 'success');
-                    } else {
-                        throw new Error(data.error || 'Translation failed');
-                    }
-                } catch (error) {
-                    console.error('Translation error:', error);
-                    outputText.innerHTML = `<p class="text-red-500">Error: ${error.message || 'Failed to translate text'}</p>`;
-                    showNotification('Translation failed. Please try again.', 'error');
-                } finally {
-                    setLoading(false);
+                if (isLoading) {
+                    translateBtn.disabled = true;
+                    translateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Translating...';
+                } else {
+                    translateBtn.disabled = false;
+                    translateBtn.innerHTML = '<i class="fas fa-language mr-2"></i>Translate';
                 }
             }
 
             // Show notification
             function showNotification(message, type = 'success') {
-                // Skip showing 'Listening...' as a notification if it's already shown in the UI
-                if (message === 'Listening... Speak now.') {
-                    return;
-                }
                 const notification = document.createElement('div');
-                notification.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${
-                    type === 'success' ? 'bg-green-500' : 'bg-red-500'
+                notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${
+                    type === 'error' ? 'bg-red-500' : 
+                    type === 'info' ? 'bg-blue-500' : 'bg-green-500'
                 }`;
                 notification.textContent = message;
                 document.body.appendChild(notification);
@@ -292,24 +281,6 @@
                     notification.remove();
                 }, 3000);
             }
-
-            // Clear function
-            function clearAll() {
-                inputText.value = '';
-                outputText.innerHTML = '<p class="text-gray-400 italic">Translation will appear here...</p>';
-            }
-
-            // Event listeners
-            translateBtn.addEventListener('click', translateText);
-            clearBtn.addEventListener('click', clearAll);
-            
-            // Handle Enter key in textarea (Ctrl+Enter to submit)
-            inputText.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && e.ctrlKey) {
-                    e.preventDefault();
-                    translateText();
-                }
-            });
         });
     </script>
 </body>
