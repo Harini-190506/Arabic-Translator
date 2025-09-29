@@ -1,287 +1,546 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Language Translator 🌍</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        .language-select {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 0.5rem center;
-            background-repeat: no-repeat;
-            background-size: 1.5em 1.5em;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-        .upload-btn-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-        }
-        .upload-btn-wrapper input[type=file] {
-            font-size: 100px;
-            position: absolute;
-            left: 0;
-            top: 0;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Tarjama</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+      --text-color: #1a1a1a;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --button-bg: #007bff;
+      --button-text: #ffffff;
+      --button-hover-bg: #0056d6;
+      --title-color: #ff4d6d;
+      --navbar-bg: rgba(255,255,255,0.9);
+    }
+    [data-theme="dark"] {
+      --bg-gradient: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      --text-color: #e0e0e0;
+      --card-bg: rgba(30, 30, 30, 0.9);
+      --button-bg: #2563eb;
+      --button-text: #ffffff;
+      --button-hover-bg: #1d4ed8;
+      --title-color: #ff758f;
+      --navbar-bg: rgba(40, 40, 40, 0.95);
+    }
+    body {
+      margin: 0;
+      font-family: 'Poppins', Arial, sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-color);
+      transition: background 1s ease-in-out, color 0.5s ease-in-out;
+    }
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: var(--navbar-bg); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.08);}
+    .logo { width: 50px; height: 50px; border-radius: 50%; margin-right: 1rem; object-fit: cover; }
+    .nav-title { font-size: 1.8rem; font-weight: 700; color: var(--title-color); }
+    /* Toggle switch */
+    .toggle-wrap { position: relative; display: inline-flex; align-items: center; gap: 8px; }
+    .switch { position: relative; width: 54px; height: 30px; background: #cbd5e1; border-radius: 999px; transition: background 0.3s ease; box-shadow: inset 0 2px 6px rgba(0,0,0,0.15);}
+    .knob { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: transform 0.3s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.15);}
+    .knob { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: transform 0.3s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.15);} 
+    [data-theme="dark"] .switch { background: #1f2937; }
+    [data-theme="dark"] .knob { transform: translateX(24px); background: #0ea5e9; }
+
+    .container { max-width: 820px; margin: 2rem auto; background-color: var(--card-bg); padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.20); backdrop-filter: blur(10px); transition: background-color 0.5s ease-in-out, box-shadow 0.5s;}
+    h1 { margin: 0 0 1rem 0; color: var(--title-color); font-size: 2.5rem; font-weight: 700; text-align: center; }
+    label { font-weight: 600; display:block; margin-top:1rem; }
+    textarea, select, input[type=file] {
+      width: 100%;
+      margin-top: 0.5rem;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+    }
+    textarea { resize: none; min-height: 110px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    button, select {
+      height: 48px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    button {
+      background-color: var(--button-bg);
+      color: var(--button-text);
+      border: none;
+      box-shadow: 0 5px 12px rgba(0, 123, 255, 0.4);
+    }
+    button:hover {
+      background-color: var(--button-hover-bg);
+      box-shadow: 0 8px 20px rgba(0, 123, 255, 0.6);
+      transform: perspective(400px) rotateX(5deg) rotateY(-5deg) scale(1.05);
+    }
+    button:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
+    button:focus-visible, select:focus-visible, textarea:focus-visible, input[type=file]:focus-visible {
+      outline: 3px solid #f59e0b;
+      outline-offset: 2px;
+    }
+    button:active {
+      transform: perspective(400px) rotateX(0deg) rotateY(0deg) scale(0.98);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    .button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .button-row > * { flex: 1; }
+    small { display: block; margin-top: 0.5rem; color: gray; }
+  </style>
 </head>
-<body class="bg-blue-50 min-h-screen">
-    <div class="container mx-auto px-4 py-12 max-w-4xl">
-        <div class="bg-white rounded-xl shadow-lg p-8">
-            <h1 class="text-3xl font-bold text-center text-blue-600 mb-8">Tarjama</h1>
-            <div class="mb-6">
-                <div class="flex justify-between items-center mb-2">
-                    <label class="block text-sm font-medium text-gray-700">Enter Text to Translate:</label>
-                    <div class="upload-btn-wrapper">
-                        <button id="uploadBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm flex items-center">
-                            <i class="fas fa-upload mr-2"></i> Upload Audio
-                        </button>
-                        <input type="file" id="audioUpload" accept="audio/*" class="hidden">
-                    </div>
-                </div>
-                <div class="relative">
-                    <textarea id="inputText" rows="6" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Type or paste your text here..."></textarea>
-                    <div id="uploadStatus" class="hidden absolute top-2 right-2 flex items-center bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
-                        <i class="fas fa-spinner fa-spin mr-1"></i> Processing...
-                    </div>
-                </div>
-                <p class="mt-1 text-xs text-gray-500">Supported formats: MP3, WAV, OGG, M4A, FLAC, AAC (max 16MB)</p>
-            </div>
+<body>
+  <nav>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <img src="{{ url_for('static', filename='soralogo.png') }}" alt="Tarjama Logo" class="logo">
+      <div class="nav-title">Tarjama</div>
+    </div>
+    <div class="toggle-wrap" title="Toggle theme">
+      <div id="theme-toggle" role="button" aria-label="Toggle theme" tabindex="0" class="switch"><div class="knob"></div></div>
+    </div>
+  </nav>
 
-            <div class="flex flex-col sm:flex-row gap-4 mb-6">
-                <div class="flex-1">
-                    <label for="language" class="block text-sm font-medium text-gray-700 mb-2">Translate to:</label>
-                    <select id="language" class="language-select w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        {% for lang, code in languages.items() %}
-                        <option value="{{ code }}">{{ lang }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="flex items-end">
-                    <button type="button" id="translateBtn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 text-lg rounded-lg transition duration-200 flex items-center justify-center">
-                        <i class="fas fa-exchange-alt mr-2"></i> Translate
-                    </button>
-                </div>
-            </div>
+  <div class="container">
+    <h1>Translator</h1>
 
-            <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Translation:</label>
-                <div id="outputText" class="min-h-32 bg-white border border-gray-300 rounded-lg p-4 text-justify">
-                    <!-- Translated text will appear here -->
-                </div>
-            </div>
+    <!-- Text Translation -->
+    <label>Enter Text to Translate:</label>
+    <textarea id="input-text" placeholder="Type or paste your text here..."></textarea>
 
-            <div class="mt-8 pt-4 border-t border-gray-200">
-                <button type="button" id="clearBtn" class="text-gray-500 hover:text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100">
-                    <i class="fas fa-eraser mr-2"></i>Clear All
-                </button>
-            </div>
-        </div>
+    <!-- Buttons row -->
+    <div class="button-row" style="display:flex; gap:10px; margin-top:1rem;">
+    <!-- Upload Button -->
+    <div style="flex:1;">
+        <input type="file" id="audio-upload" accept=".mp3,.wav,.ogg,.m4a,.flac,.aac,.webm" style="display:none;">
+        <button id="upload-btn" type="button" style="width:100%; height:48px;" title="Upload audio file">
+          <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">upload</span> Upload Audio
+        </button>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Language mapping
-            const LANGUAGE_NAMES = {
-                'en': 'English',
-                'ar': 'Arabic',
-                'fr': 'French',
-                'es': 'Spanish',
-                'de': 'German',
-                'it': 'Italian',
-                'pt': 'Portuguese',
-                'ru': 'Russian',
-                'zh': 'Chinese',
-                'ja': 'Japanese',
-                'ko': 'Korean',
-                'hi': 'Hindi',
-                'bn': 'Bengali',
-                'tr': 'Turkish',
-                'nl': 'Dutch',
-                'el': 'Greek',
-                'he': 'Hebrew',
-                'th': 'Thai',
-                'vi': 'Vietnamese'
-            };
+    <!-- Record Button -->
+    <button id="record-btn" type="button" style="flex:1; height:48px; background-color:#10b981; box-shadow: 0 5px 12px rgba(16,185,129,0.4);" title="Record from microphone">
+      <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">mic</span> Record
+    </button>
 
-            const inputText = document.getElementById('inputText');
-            const outputText = document.getElementById('outputText');
-            const translateBtn = document.getElementById('translateBtn');
-            const clearBtn = document.getElementById('clearBtn');
-            const languageSelect = document.getElementById('language');
-            const audioUpload = document.getElementById('audioUpload');
-            const uploadStatus = document.getElementById('uploadStatus');
+    <!-- Language dropdown styled like a button -->
+    <select id="lang" style="flex:1; height:48px; font-size:1rem; border-radius:8px; padding:0 12px; border:1px solid #ccc; background-color: var(--button-bg); color: var(--button-text); cursor:pointer;">
+        <option value="en">English</option>
+        <option value="ar">Arabic</option>
+        <option value="fr">French</option>
+    </select>
 
-            // Handle translation
-            async function translateText() {
-                const text = inputText.value.trim();
-                const targetLang = languageSelect.value;
-                
-                if (!text) {
-                    showNotification('Please enter some text to translate', 'error');
-                    return;
-                }
+    <!-- Translate Button -->
+    <button id="translate-btn" type="button" style="flex:1; height:48px;" title="Translate input text">
+      <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">translate</span> Translate
+    </button>
+    </div>
+    <small id="record-status" aria-live="polite"></small>
 
-                setLoading(true);
-                outputText.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-500 text-2xl"></i><p class="mt-2 text-gray-600">Translating...</p></div>';
-                
-                try {
-                    const response = await fetch('/translate', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            text: text,
-                            language: targetLang
-                        })
-                    });
+    
 
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        // Only show the translated text
-                        outputText.innerHTML = `
-                            <div class="translation-result">
-                                <p class="whitespace-pre-wrap text-justify">${data.translated_text}</p>
-                            </div>
-                        `;
-                        
-                        showNotification('Translation completed!', 'success');
-                    } else {
-                        throw new Error(data.error || 'Failed to translate text');
-                    }
-                } catch (error) {
-                    console.error('Translation error:', error);
-                    outputText.innerHTML = `
-                        <div class="bg-red-50 p-4 rounded-lg">
-                            <h3 class="text-sm font-medium text-red-600 mb-2">Error:</h3>
-                            <p class="text-red-700">${error.message || 'Failed to translate text. Please try again.'}</p>
-                        </div>
-                    `;
-                    showNotification('Translation failed. Please try again.', 'error');
-                } finally {
-                    setLoading(false);
-                }
+
+
+    <h3 style="margin-top:1.5rem;">Translation:</h3>
+    <div style="position:relative;">
+      <textarea id="translated-text" readonly placeholder="Your translation will appear here..."></textarea>
+      <button id="copy-btn" type="button" title="Copy translation" style="position:absolute; top:8px; right:8px; padding:8px 10px; border-radius:8px; background:#111827; color:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+        <span class="material-symbols-outlined" style="font-size:18px; vertical-align:middle;">content_copy</span>
+      </button>
+    </div>
+
+    <!-- Advanced Receipt Scanner -->
+    <h2 style="margin-top:2rem; font-size:1.4rem;">Receipt Scanner (Advanced)</h2>
+    <div class="button-row" style="display:flex; gap:10px; margin-top:0.5rem;">
+      <div style="flex:1;">
+        <input type="file" id="receipt-adv-upload" accept="image/*,.pdf" style="display:none;">
+        <button id="receipt-adv-btn" type="button" style="width:100%; height:48px; background:#7c3aed; box-shadow: 0 5px 12px rgba(124,58,237,0.4);" title="Upload image/PDF to scan">
+          <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">scan</span> Scan Receipt (Image/PDF)
+        </button>
+      </div>
+      <button id="camera-toggle-btn" type="button" style="flex:1; height:48px; background:#0ea5e9;" title="Use your camera to capture receipt">
+        <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">photo_camera</span> Use Camera
+      </button>
+    </div>
+    <small id="adv-ocr-status" aria-live="polite"></small>
+
+    <div id="scanner-grid" style="display:grid; grid-template-columns:1.2fr 1fr; gap:16px; align-items:start; margin-top:1rem;">
+      <div style="position:relative; background:rgba(0,0,0,0.03); padding:8px; border-radius:12px;">
+        <canvas id="receipt-canvas" style="width:100%; border-radius:12px;"></canvas>
+        <video id="camera-stream" playsinline style="width:100%; display:none; border-radius:12px;"></video>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button id="capture-btn" type="button" style="display:none; background:#10b981;">Capture</button>
+          <button id="stop-camera-btn" type="button" style="display:none; background:#ef4444;">Stop Camera</button>
+        </div>
+      </div>
+      <div>
+        <div style="background:var(--card-bg); border-radius:12px; padding:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+          <label>Patient Name</label>
+          <input id="f-patient" type="text" placeholder="Name" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #ccc;">
+          <div style="display:flex; gap:8px;">
+            <div style="flex:1;">
+              <label>Date</label>
+              <input id="f-date" type="text" placeholder="YYYY-MM-DD" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #ccc;">
+            </div>
+            <div style="flex:1;">
+              <label>Doctor</label>
+              <input id="f-doctor" type="text" placeholder="Doctor" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #ccc;">
+            </div>
+          </div>
+          <label>Hospital/Clinic</label>
+          <input id="f-hospital" type="text" placeholder="Hospital/Clinic" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #ccc;">
+          <label>Medicines</label>
+          <textarea id="f-medicines" placeholder="One per line" style="min-height:100px;"></textarea>
+          <label>Notes</label>
+          <textarea id="f-notes" placeholder="Notes"></textarea>
+        </div>
+        <div class="button-row" style="display:flex; gap:10px; margin-top:10px;">
+          <button id="adv-translate-btn" type="button" style="flex:1; background:#2563eb;">
+            <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">translate</span> Translate Fields
+          </button>
+          <button id="download-report-btn" type="button" style="flex:1; background:#111827;">
+            <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">download</span> Download Report
+          </button>
+        </div>
+        <div style="background:var(--card-bg); border-radius:12px; padding:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08); margin-top:10px;">
+          <h4 style="margin:0 0 8px 0;">Translation (English)</h4>
+          <textarea id="f-translation" placeholder="Translated summary" style="min-height:100px;"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+    <!-- Footer -->
+<footer style="margin-top:2rem; padding:1.5rem 2rem; background-color: var(--card-bg); border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1); font-size:0.9rem; color: var(--text-color); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+  
+  <!-- Left: Team info -->
+  <div style="text-align:left; line-height:1.5;">
+    <strong>Tarjama Project Team</strong><br>
+    Jamunadevi G - <a href="mailto:jamunadevig.23aim@kongu.edu" style="color:#1e90ff; text-decoration:none;">jamunadevig.23aim@kongu.edu</a> - 9043249887<br>
+    Jaya Harini S - <a href="mailto:jayaharinis.23aim@kongu.edu" style="color:#1e90ff; text-decoration:none;">jayaharinis.23aim@kongu.edu</a><br>
+    Jayesh NK - <a href="mailto:jayeshnk.23aim@kongu.edu" style="color:#1e90ff; text-decoration:none;">jayeshnk.23aim@kongu.edu</a>
+  </div>
+
+  <!-- Right: Copyright -->
+  <div style="text-align:right; line-height:1.5;">
+    &copy; 2025 Tarjama. All rights reserved.<br>
+    Designed and developed with 💖
+  </div>
+
+ </footer>
+
+
+
+  <script>
+    // Theme toggle switch
+    const toggleBtn = document.getElementById("theme-toggle");
+    const applyTheme = (theme) => {
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("theme", theme);
+    };
+    toggleBtn.addEventListener("click", () => {
+      const currentTheme = document.documentElement.getAttribute("data-theme");
+      const newTheme = currentTheme === "dark" ? "light" : "dark";
+      applyTheme(newTheme);
+    });
+    toggleBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleBtn.click(); } });
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+
+    const inputText = document.getElementById('input-text');
+    const translatedText = document.getElementById('translated-text');
+    const langSelect = document.getElementById('lang');
+    const copyBtn = document.getElementById('copy-btn');
+
+    // Upload audio -> fill input
+    const audioInput = document.getElementById('audio-upload');
+    const uploadBtn = document.getElementById('upload-btn');
+    const recordBtn = document.getElementById('record-btn');
+    const recordStatus = document.getElementById('record-status');
+    const receiptInput = document.getElementById('receipt-upload');
+    const receiptBtn = document.getElementById('receipt-btn');
+    
+    
+    // (Basic OCR upload removed; using Advanced Receipt Scanner below)
+    uploadBtn.addEventListener('click', () => audioInput.click());
+
+    audioInput.addEventListener('change', async () => {
+      if (!audioInput.files.length) return;
+      const file = audioInput.files[0];
+      const formData = new FormData();
+      formData.append('audio', file);
+
+      try {
+        uploadBtn.disabled = true; uploadBtn.textContent = 'Uploading…';
+        recordStatus.textContent = 'Uploading and transcribing…';
+        const response = await fetch('/transcribe', { method: 'POST', body: formData });
+        const data = await response.json();
+        if (data.status === 'success') {
+          inputText.value = data.text;
+        } else {
+          const details = data.details ? `\nDetails: ${data.details}` : '';
+          alert((data.error || 'Transcription failed') + details);
+        }
+      } catch (err) {
+        console.error(err); alert('Server error during upload');
+      } finally {
+        uploadBtn.disabled = false; uploadBtn.textContent = 'Upload Audio';
+        recordStatus.textContent = '';
+        // Reset the input so selecting the same file again triggers the change event
+        audioInput.value = '';
+      }
+    });
+
+    // MediaRecorder for in-browser recording
+    let mediaRecorder = null;
+    let chunks = [];
+    function getSupportedMimeType() {
+      const types = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/ogg'
+      ];
+      for (const t of types) { if (MediaRecorder.isTypeSupported(t)) return t; }
+      return '';
+    }
+
+    recordBtn.addEventListener('click', async () => {
+      if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+        // Start recording
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const mimeType = getSupportedMimeType();
+          mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+          chunks = [];
+          mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+          mediaRecorder.onstart = () => {
+            recordBtn.textContent = '⏹️ Stop';
+            recordBtn.style.backgroundColor = '#ef4444';
+            recordStatus.textContent = 'Recording… Speak now';
+          };
+          mediaRecorder.onstop = async () => {
+            recordBtn.textContent = '🎙️ Record';
+            recordBtn.style.backgroundColor = '#10b981';
+            recordStatus.textContent = 'Processing audio…';
+            const blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
+            const formData = new FormData();
+            // Always use a .webm extension so backend allows it and converts via ffmpeg
+            formData.append('audio', blob, 'recording.webm');
+            try {
+              recordBtn.disabled = true;
+              const resp = await fetch('/transcribe', { method: 'POST', body: formData });
+              const data = await resp.json();
+              if (data.status === 'success') inputText.value = data.text; else alert(data.error || 'Transcription failed');
+            } catch (err) {
+              console.error(err); alert('Recording upload failed');
+            } finally {
+              recordBtn.disabled = false; recordStatus.textContent = '';
             }
+          };
+          mediaRecorder.start();
+        } catch (err) {
+          console.error(err);
+          alert('Microphone permission denied or unsupported browser.');
+        }
+      } else if (mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+    });
 
-            // Handle audio file upload
-            audioUpload.addEventListener('change', async function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                // Show processing status
-                uploadStatus.classList.remove('hidden');
-                uploadStatus.textContent = 'Processing audio...';
-                
-                console.log('Selected file type:', file.type); // Debug log
-                
-                // Basic file extension check
-                const allowedExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac'];
-                const fileExt = '.' + file.name.split('.').pop().toLowerCase();
-                
-                if (!allowedExtensions.includes(fileExt)) {
-                    showNotification('Unsupported file type. Please upload an audio file (MP3, WAV, OGG, M4A, FLAC, AAC)', 'error');
-                    uploadStatus.classList.add('hidden');
-                    this.value = ''; // Clear the file input
-                    return;
-                }
+    // Translate button
+    const translateBtn = document.getElementById('translate-btn');
+    translateBtn.addEventListener('click', async () => {
+      const text = inputText.value.trim();
+      const language = langSelect.value;
+      if (!text) return alert('Please enter text to translate');
 
-                // Validate file size (16MB)
-                const maxSize = 16 * 1024 * 1024; // 16MB
-                if (file.size > maxSize) {
-                    showNotification('File size exceeds 16MB limit', 'error');
-                    uploadStatus.classList.add('hidden');
-                    this.value = ''; // Clear the file input
-                    return;
-                }
-                
-                try {
-                    const formData = new FormData();
-                    formData.append('audio', file);
-                    
-                    const response = await fetch('/transcribe', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (response.ok && result.status === 'success' && result.text) {
-                        // Set the transcribed text in the input field
-                        inputText.value = result.text;
-                        
-                        // Apply RTL style if the text is in Arabic
-                        const isArabic = /[\u0600-\u06FF]/.test(result.text);
-                        if (isArabic) {
-                            inputText.style.direction = 'rtl';
-                            inputText.style.textAlign = 'right';
-                        } else {
-                            inputText.style.direction = 'ltr';
-                            inputText.style.textAlign = 'left';
-                        }
-                        
-                        showNotification('Audio transcribed! Click Translate to translate.', 'success');
-                    } else {
-                        throw new Error(result.error || 'Failed to transcribe audio');
-                    }
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    showNotification(error.message || 'Error processing audio file. Please try again.', 'error');
-                } finally {
-                    uploadStatus.classList.add('hidden');
-                    this.value = ''; // Clear the file input
-                }
-            });
-
-            // Event listeners
-            translateBtn.addEventListener('click', translateText);
-            
-            // Add click handler for the upload button
-            document.getElementById('uploadBtn').addEventListener('click', function() {
-                document.getElementById('audioUpload').click();
-            });
-            
-            clearBtn.addEventListener('click', function() {
-                inputText.value = '';
-                outputText.innerHTML = '';
-                showNotification('Cleared all text', 'info');
-            });
-
-            // Set loading state
-            function setLoading(isLoading) {
-                if (isLoading) {
-                    translateBtn.disabled = true;
-                    translateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Translating...';
-                } else {
-                    translateBtn.disabled = false;
-                    translateBtn.innerHTML = '<i class="fas fa-language mr-2"></i>Translate';
-                }
-            }
-
-            // Show notification
-            function showNotification(message, type = 'success') {
-                const notification = document.createElement('div');
-                notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${
-                    type === 'error' ? 'bg-red-500' : 
-                    type === 'info' ? 'bg-blue-500' : 'bg-green-500'
-                }`;
-                notification.textContent = message;
-                document.body.appendChild(notification);
-                
-                // Remove notification after 3 seconds
-                setTimeout(() => {
-                    notification.remove();
-                }, 3000);
-            }
+      try {
+        translateBtn.disabled = true; translateBtn.textContent = 'Translating…';
+        const response = await fetch('/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, language })
         });
-    </script>
+        const data = await response.json();
+        if (data.status === 'success') translatedText.value = data.translated_text;
+        else alert(data.error || 'Translation failed');
+      } catch (err) { console.error(err); alert('Server error'); }
+      finally { translateBtn.disabled = false; translateBtn.textContent = 'Translate'; }
+    });
+
+    // Advanced Receipt Scanner elements
+    const advUploadInput = document.getElementById('receipt-adv-upload');
+    const advUploadBtn = document.getElementById('receipt-adv-btn');
+    const advStatus = document.getElementById('adv-ocr-status');
+    const canvas = document.getElementById('receipt-canvas');
+    const ctx = canvas.getContext('2d');
+    const cameraBtn = document.getElementById('camera-toggle-btn');
+    const captureBtn = document.getElementById('capture-btn');
+    const stopCamBtn = document.getElementById('stop-camera-btn');
+    const videoEl = document.getElementById('camera-stream');
+    const fPatient = document.getElementById('f-patient');
+    const fDate = document.getElementById('f-date');
+    const fDoctor = document.getElementById('f-doctor');
+    const fHospital = document.getElementById('f-hospital');
+    const fMeds = document.getElementById('f-medicines');
+    const fNotes = document.getElementById('f-notes');
+    const fTranslation = document.getElementById('f-translation');
+    const advTranslateBtn = document.getElementById('adv-translate-btn');
+    const downloadReportBtn = document.getElementById('download-report-btn');
+
+    function drawPreviewAndBoxes(b64png, boxes) {
+      const img = new Image();
+      img.onload = () => {
+        // Resize canvas to image
+        const maxW = canvas.parentElement.clientWidth;
+        const scale = Math.min(1, maxW / img.width);
+        canvas.width = Math.floor(img.width * scale);
+        canvas.height = Math.floor(img.height * scale);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        // Draw boxes
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 2;
+        boxes.forEach(b => {
+          ctx.strokeRect(b.x * scale, b.y * scale, b.w * scale, b.h * scale);
+        });
+      };
+      img.src = 'data:image/png;base64,' + b64png;
+    }
+
+    function populateFields(fields) {
+      fPatient.value = fields.patient_name || '';
+      fDate.value = fields.date || '';
+      fDoctor.value = fields.doctor || '';
+      fHospital.value = fields.hospital || '';
+      fMeds.value = (fields.medicines || []).join('\n');
+      fNotes.value = fields.notes || '';
+    }
+
+    async function runAdvancedOCR(file) {
+      const formData = new FormData();
+      formData.append('image', file);
+      try {
+        advUploadBtn.disabled = true; cameraBtn.disabled = true; advStatus.textContent = 'Scanning…';
+        const resp = await fetch('/ocr_receipt', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (data.status === 'success') {
+          drawPreviewAndBoxes(data.preview_png_base64, data.boxes || []);
+          populateFields(data.fields || {});
+          // Place raw text into input area too for optional translation
+          inputText.value = data.raw_text || '';
+        } else {
+          const details = data.details ? `\nDetails: ${data.details}` : '';
+          alert((data.error || 'Advanced OCR failed') + details);
+        }
+      } catch (e) {
+        console.error(e); alert('Server error during advanced OCR');
+      } finally {
+        advUploadBtn.disabled = false; cameraBtn.disabled = false; advStatus.textContent = '';
+      }
+    }
+
+    advUploadBtn.addEventListener('click', () => advUploadInput.click());
+    advUploadInput.addEventListener('change', async () => {
+      if (!advUploadInput.files.length) return;
+      await runAdvancedOCR(advUploadInput.files[0]);
+      advUploadInput.value = '';
+    });
+
+    // Camera capture flow
+    let camStream = null;
+    cameraBtn.addEventListener('click', async () => {
+      if (!camStream) {
+        try {
+          camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          videoEl.srcObject = camStream; videoEl.style.display = 'block'; videoEl.play();
+          captureBtn.style.display = 'inline-block'; stopCamBtn.style.display = 'inline-block';
+        } catch (e) {
+          console.error(e); alert('Unable to access camera');
+        }
+      }
+    });
+    stopCamBtn.addEventListener('click', () => {
+      if (camStream) {
+        camStream.getTracks().forEach(t => t.stop()); camStream = null;
+      }
+      videoEl.pause(); videoEl.srcObject = null; videoEl.style.display = 'none';
+      captureBtn.style.display = 'none'; stopCamBtn.style.display = 'none';
+    });
+    captureBtn.addEventListener('click', async () => {
+      if (!camStream) return;
+      // Draw current frame to canvas and send
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = videoEl.videoWidth; tempCanvas.height = videoEl.videoHeight;
+      const tctx = tempCanvas.getContext('2d');
+      tctx.drawImage(videoEl, 0, 0);
+      tempCanvas.toBlob(async (blob) => { if (blob) await runAdvancedOCR(new File([blob], 'capture.png', { type: 'image/png' })); }, 'image/png');
+    });
+
+    // Translate fields into English summary
+    advTranslateBtn.addEventListener('click', async () => {
+      const arabicSummary = [
+        fPatient.value && `اسم المريض: ${fPatient.value}`,
+        fDate.value && `التاريخ: ${fDate.value}`,
+        fDoctor.value && `الطبيب: ${fDoctor.value}`,
+        fHospital.value && `المستشفى: ${fHospital.value}`,
+        fMeds.value && `الأدوية: ${fMeds.value}`,
+        fNotes.value && `ملاحظات: ${fNotes.value}`,
+      ].filter(Boolean).join('\n');
+      if (!arabicSummary) { alert('No fields to translate'); return; }
+      try {
+        advTranslateBtn.disabled = true; advTranslateBtn.textContent = 'Translating…';
+        const response = await fetch('/translate', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: arabicSummary, language: 'en' })
+        });
+        const data = await response.json();
+        if (data.status === 'success') fTranslation.value = data.translated_text; else alert(data.error || 'Translation failed');
+      } catch (e) { console.error(e); alert('Server error during translation'); }
+      finally { advTranslateBtn.disabled = false; advTranslateBtn.textContent = 'Translate Fields'; }
+    });
+
+    // Export report
+    downloadReportBtn.addEventListener('click', async () => {
+      const fields = {
+        patient_name: fPatient.value,
+        date: fDate.value,
+        doctor: fDoctor.value,
+        hospital: fHospital.value,
+        medicines: fMeds.value ? fMeds.value.split('\n') : [],
+        notes: fNotes.value
+      };
+      const translations = {
+        patient_name: fPatient.value ? fPatient.value : '',
+        date: fDate.value,
+        doctor: fDoctor.value,
+        hospital: fHospital.value,
+        medicines: fMeds.value ? fMeds.value.split('\n') : [],
+        notes: fTranslation.value || ''
+      };
+      try {
+        downloadReportBtn.disabled = true; downloadReportBtn.textContent = 'Preparing…';
+        const resp = await fetch('/export_report', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields, translations, format: 'pdf' })
+        });
+        if (!resp.ok) { const t = await resp.text(); throw new Error(t || 'Export failed'); }
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'receipt_report.pdf'; a.click();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.error(e); alert('Failed to download report');
+      } finally {
+        downloadReportBtn.disabled = false; downloadReportBtn.textContent = 'Download Report';
+      }
+    });
+  </script>
 </body>
 </html>
