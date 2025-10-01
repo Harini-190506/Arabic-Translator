@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Tarjama</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
   <style>
     :root {
       --bg-gradient: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
@@ -39,7 +39,6 @@
     /* Toggle switch */
     .toggle-wrap { position: relative; display: inline-flex; align-items: center; gap: 8px; }
     .switch { position: relative; width: 54px; height: 30px; background: #cbd5e1; border-radius: 999px; transition: background 0.3s ease; box-shadow: inset 0 2px 6px rgba(0,0,0,0.15);}
-    .knob { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: transform 0.3s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.15);}
     .knob { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: transform 0.3s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.15);} 
     [data-theme="dark"] .switch { background: #1f2937; }
     [data-theme="dark"] .knob { transform: translateX(24px); background: #0ea5e9; }
@@ -61,44 +60,90 @@
     button, select {
       height: 48px;
       font-size: 1rem;
-      font-weight: bold;
-      border-radius: 8px;
+      font-weight: 600;
+      border-radius: 10px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: background-color 0.25s ease, box-shadow 0.25s ease, transform 0.05s ease;
     }
     button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 16px;
       background-color: var(--button-bg);
       color: var(--button-text);
       border: none;
-      box-shadow: 0 5px 12px rgba(0, 123, 255, 0.4);
+      box-shadow: 0 5px 12px rgba(0, 123, 255, 0.35);
     }
     button:hover {
       background-color: var(--button-hover-bg);
-      box-shadow: 0 8px 20px rgba(0, 123, 255, 0.6);
-      transform: perspective(400px) rotateX(5deg) rotateY(-5deg) scale(1.05);
+      box-shadow: 0 8px 20px rgba(0, 123, 255, 0.45);
     }
-    button:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
+    button:disabled { opacity: 0.65; cursor: not-allowed; transform: none; box-shadow: none; }
     button:focus-visible, select:focus-visible, textarea:focus-visible, input[type=file]:focus-visible {
       outline: 3px solid #f59e0b;
       outline-offset: 2px;
     }
-    button:active {
-      transform: perspective(400px) rotateX(0deg) rotateY(0deg) scale(0.98);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-    }
+    button:active { transform: scale(0.98); box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
     .button-row {
       display: flex;
       gap: 10px;
       margin-top: 1rem;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      align-items: stretch;
     }
-    .button-row > * { flex: 1; }
+    .button-row > * { flex: 1 1 0; }
+    @media (max-width: 720px) {
+      .button-row { flex-wrap: wrap; }
+      .button-row > * { flex: 1 1 100%; }
+    }
     small { display: block; margin-top: 0.5rem; color: gray; }
+
+    /* Common inline styles as classes */
+    .flex-center { display: flex; align-items: center; gap: 10px; }
+    .button-width { width: 100%; height: 48px; }
+    .button-green { background-color: #10b981; box-shadow: 0 5px 12px rgba(16,185,129,0.4); }
+    .button-purple { background: #7c3aed; box-shadow: 0 5px 12px rgba(124,58,237,0.4); }
+    .button-blue { background: #0ea5e9; }
+    .button-emerald { background: #059669; }
+    .button-dark { background: #111827; }
+    .flex-1 { flex: 1; }
+    .select-styled { height: 48px; width: 100%; box-sizing: border-box; font-size: 1rem; border-radius: 10px; padding: 0 12px; border: none; background-color: var(--button-bg); color: var(--button-text); cursor: pointer; box-shadow: 0 5px 12px rgba(0, 123, 255, 0.35); -webkit-appearance: none; -moz-appearance: none; appearance: none; }
+    .select-styled:hover { background-color: var(--button-hover-bg); box-shadow: 0 8px 20px rgba(0, 123, 255, 0.45); }
+    .position-relative { position: relative; }
+    .position-absolute { position: absolute; top: 8px; right: 8px; padding: 8px 10px; border-radius: 8px; background: #111827; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    .input-styled { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #ccc; }
+    .grid-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; align-items: start; margin-top: 1rem; }
+    .footer-styled { margin-top: 2rem; padding: 1.5rem 2rem; background-color: var(--card-bg); border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); font-size: 0.9rem; color: var(--text-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+    .footer-text-left { text-align: left; line-height: 1.5; }
+    .footer-text-right { text-align: right; line-height: 1.5; }
+    .footer-link { color: #1e90ff; text-decoration: none; }
+    .icon-inline { vertical-align: middle; margin-right: 6px; line-height: 1; }
+    .icon-large { font-size: 18px; vertical-align: middle; }
+    .textarea-styled { min-height: 100px; }
+    .margin-top-sm { margin-top: 0.5rem; }
+    .margin-top-md { margin-top: 1rem; }
+    .margin-top-lg { margin-top: 1.5rem; }
+    .margin-top-xl { margin-top: 2rem; }
+    .heading-large { margin-top: 2rem; font-size: 1.4rem; }
+    .preview-container { position: relative; background: rgba(0,0,0,0.03); padding: 8px; border-radius: 12px; }
+    .canvas-styled { width: 100%; border-radius: 12px; max-height: 60vh; object-fit: contain; }
+    .video-styled { width: 100%; display: none; border-radius: 12px; }
+    .button-group { display: flex; gap: 8px; margin-top: 8px; }
+    .btn-capture { display: none; background: #10b981; }
+    .btn-stop { display: none; background: #ef4444; }
+    .form-section { background: var(--card-bg); border-radius: 12px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .form-section-margin { margin-top: 10px; }
+    .form-title { margin: 0 0 8px 0; }
+    .form-row { display: flex; gap: 8px; }
+    /* Hide helper for native file inputs triggered by custom buttons */
+    .hide { display: none; }
   </style>
 </head>
 <body>
   <nav>
-    <div style="display:flex; align-items:center; gap:10px;">
+    <div class="flex-center">
       <img src="{{ url_for('static', filename='soralogo.png') }}" alt="Tarjama Logo" class="logo">
       <div class="nav-title">Tarjama</div>
     </div>
@@ -113,32 +158,32 @@
     <!-- Text Translation -->
     <label>Enter Text to Translate:</label>
     <textarea id="input-text" placeholder="Type or paste your text here..."></textarea>
-
-    <!-- Buttons row -->
-    <div class="button-row" style="display:flex; gap:10px; margin-top:1rem;">
+    <div class="button-row margin-top-md">
     <!-- Upload Button -->
-    <div style="flex:1;">
-        <input type="file" id="audio-upload" accept=".mp3,.wav,.ogg,.m4a,.flac,.aac,.webm" style="display:none;">
-        <button id="upload-btn" type="button" style="width:100%; height:48px;" title="Upload audio file">
-          <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">upload</span> Upload Audio
+    <div class="flex-1">
+        <input type="file" id="audio-upload" accept=".mp3,.wav,.ogg,.m4a,.flac,.aac,.webm" class="hide">
+        <button id="upload-btn" type="button" class="button-width" title="Upload audio file">
+          <span class="material-symbols-outlined icon-inline">upload</span> Upload Audio
         </button>
     </div>
 
     <!-- Record Button -->
-    <button id="record-btn" type="button" style="flex:1; height:48px; background-color:#10b981; box-shadow: 0 5px 12px rgba(16,185,129,0.4);" title="Record from microphone">
-      <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">mic</span> Record
+    <button id="record-btn" type="button" class="flex-1 button-green" title="Record from microphone">
+      <span class="material-symbols-outlined icon-inline">mic</span> Record
     </button>
 
     <!-- Language dropdown styled like a button -->
-    <select id="lang" style="flex:1; height:48px; font-size:1rem; border-radius:8px; padding:0 12px; border:1px solid #ccc; background-color: var(--button-bg); color: var(--button-text); cursor:pointer;">
-        <option value="en">English</option>
-        <option value="ar">Arabic</option>
-        <option value="fr">French</option>
+    <select id="lang" class="flex-1 select-styled">
+        {% for name, code in languages.items() %}
+          {% if code != 'ar' %}
+            <option value="{{ code }}" {% if code == 'en' %}selected{% endif %}>{{ name }}</option>
+          {% endif %}
+        {% endfor %}
     </select>
 
     <!-- Translate Button -->
-    <button id="translate-btn" type="button" style="flex:1; height:48px;" title="Translate input text">
-      <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">translate</span> Translate
+    <button id="translate-btn" type="button" class="flex-1" title="Translate input text">
+      <span class="material-symbols-outlined icon-inline">translate</span> Translate
     </button>
     </div>
     <small id="record-status" aria-live="polite"></small>
@@ -147,92 +192,95 @@
 
 
 
-    <h3 style="margin-top:1.5rem;">Translation:</h3>
-    <div style="position:relative;">
+    <h3 class="margin-top-lg">Translation:</h3>
+    <div class="position-relative">
       <textarea id="translated-text" readonly placeholder="Your translation will appear here..."></textarea>
-      <button id="copy-btn" type="button" title="Copy translation" style="position:absolute; top:8px; right:8px; padding:8px 10px; border-radius:8px; background:#111827; color:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
-        <span class="material-symbols-outlined" style="font-size:18px; vertical-align:middle;">content_copy</span>
+      <button id="copy-btn" type="button" class="position-absolute" title="Copy translation">
+        <span class="material-symbols-outlined icon-large">content_copy</span>
       </button>
     </div>
 
     <!-- Advanced Receipt Scanner -->
-    <h2 style="margin-top:2rem; font-size:1.4rem;">Receipt Scanner (Advanced)</h2>
-    <div class="button-row" style="display:flex; gap:10px; margin-top:0.5rem;">
-      <div style="flex:1;">
-        <input type="file" id="receipt-adv-upload" accept="image/*,.pdf" style="display:none;">
-        <button id="receipt-adv-btn" type="button" style="width:100%; height:48px; background:#7c3aed; box-shadow: 0 5px 12px rgba(124,58,237,0.4);" title="Upload image/PDF to scan">
-          <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">scan</span> Scan Receipt (Image/PDF)
+    <h2 class="heading-large">Receipt Scanner (Advanced)</h2>
+    <div class="button-row margin-top-sm">
+      <div class="flex-1">
+        <input type="file" id="receipt-adv-upload" accept="image/*,.pdf" class="hide">
+        <button id="receipt-adv-btn" type="button" class="button-width button-purple" title="Upload image/PDF to scan">
+          <span class="material-symbols-outlined icon-inline">scan</span> Scan Receipt (Image/PDF)
         </button>
       </div>
-      <button id="camera-toggle-btn" type="button" style="flex:1; height:48px; background:#0ea5e9;" title="Use your camera to capture receipt">
-        <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">photo_camera</span> Use Camera
+      <button id="camera-toggle-btn" type="button" class="flex-1 button-blue" title="Use your camera to capture receipt">
+        <span class="material-symbols-outlined icon-inline">photo_camera</span> Use Camera
       </button>
     </div>
     <small id="adv-ocr-status" aria-live="polite"></small>
 
-    <div id="scanner-grid" style="display:grid; grid-template-columns:1.2fr 1fr; gap:16px; align-items:start; margin-top:1rem;">
-      <div style="position:relative; background:rgba(0,0,0,0.03); padding:8px; border-radius:12px;">
-        <canvas id="receipt-canvas" style="width:100%; border-radius:12px;"></canvas>
-        <video id="camera-stream" playsinline style="width:100%; display:none; border-radius:12px;"></video>
-        <div style="display:flex; gap:8px; margin-top:8px;">
-          <button id="capture-btn" type="button" style="display:none; background:#10b981;">Capture</button>
-          <button id="stop-camera-btn" type="button" style="display:none; background:#ef4444;">Stop Camera</button>
+    <div class="grid-layout">
+      <div class="preview-container">
+        <canvas id="receipt-canvas" class="canvas-styled"></canvas>
+        <video id="camera-stream" playsinline class="video-styled"></video>
+        <div class="button-group">
+          <button id="capture-btn" type="button" class="btn-capture">Capture</button>
+          <button id="stop-camera-btn" type="button" class="btn-stop">Stop Camera</button>
         </div>
       </div>
       <div>
-        <div style="background:var(--card-bg); border-radius:12px; padding:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+        <div class="form-section">
           <label>Patient Name</label>
-          <input id="f-patient" type="text" placeholder="Name" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #ccc;">
+          <input id="f-patient" type="text" placeholder="Name" class="input-styled">
           <div style="display:flex; gap:8px;">
-            <div style="flex:1;">
+            <div class="flex-1">
               <label>Date</label>
-              <input id="f-date" type="text" placeholder="YYYY-MM-DD" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #ccc;">
+              <input id="f-date" type="text" placeholder="YYYY-MM-DD" class="input-styled">
             </div>
-            <div style="flex:1;">
+            <div class="flex-1">
               <label>Doctor</label>
-              <input id="f-doctor" type="text" placeholder="Doctor" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #ccc;">
+              <input id="f-doctor" type="text" placeholder="Doctor" class="input-styled">
             </div>
           </div>
           <label>Hospital/Clinic</label>
-          <input id="f-hospital" type="text" placeholder="Hospital/Clinic" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #ccc;">
+          <input id="f-hospital" type="text" placeholder="Hospital/Clinic" class="input-styled">
           <label>Medicines</label>
-          <textarea id="f-medicines" placeholder="One per line" style="min-height:100px;"></textarea>
+          <textarea id="f-medicines" placeholder="One per line" class="textarea-styled"></textarea>
           <label>Notes</label>
           <textarea id="f-notes" placeholder="Notes"></textarea>
         </div>
-        <div class="button-row" style="display:flex; gap:10px; margin-top:10px;">
-          <button id="adv-translate-btn" type="button" style="flex:1; background:#2563eb;">
-            <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">translate</span> Translate Fields
+        <div class="button-row margin-top-md">
+          <button id="simple-extract-btn" type="button" class="flex-1 button-purple">
+            <span class="material-symbols-outlined icon-inline">article</span> Extract Fields
           </button>
-          <button id="download-report-btn" type="button" style="flex:1; background:#111827;">
-            <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">download</span> Download Report
+          <button id="adv-translate-btn" type="button" class="flex-1">
+            <span class="material-symbols-outlined icon-inline">translate</span> Translate Fields
+          </button>
+          <button id="download-report-btn" type="button" class="flex-1 button-dark">
+            <span class="material-symbols-outlined icon-inline">download</span> Download Report
           </button>
         </div>
-        <div style="background:var(--card-bg); border-radius:12px; padding:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08); margin-top:10px;">
-          <h4 style="margin:0 0 8px 0;">Translation (English)</h4>
-          <textarea id="f-translation" placeholder="Translated summary" style="min-height:100px;"></textarea>
+        <div class="form-section form-section-margin">
+          <h4 class="form-title">Translation (English)</h4>
+          <textarea id="f-translation" placeholder="Translated summary" class="textarea-styled"></textarea>
         </div>
       </div>
     </div>
   </div>
     <!-- Footer -->
-<footer style="margin-top:2rem; padding:1.5rem 2rem; background-color: var(--card-bg); border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1); font-size:0.9rem; color: var(--text-color); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+<footer class="footer-styled">
   
   <!-- Left: Team info -->
-  <div style="text-align:left; line-height:1.5;">
+  <div class="footer-text-left">
     <strong>Tarjama Project Team</strong><br>
-    Jamunadevi G - <a href="mailto:jamunadevig.23aim@kongu.edu" style="color:#1e90ff; text-decoration:none;">jamunadevig.23aim@kongu.edu</a> - 9043249887<br>
-    Jaya Harini S - <a href="mailto:jayaharinis.23aim@kongu.edu" style="color:#1e90ff; text-decoration:none;">jayaharinis.23aim@kongu.edu</a><br>
-    Jayesh NK - <a href="mailto:jayeshnk.23aim@kongu.edu" style="color:#1e90ff; text-decoration:none;">jayeshnk.23aim@kongu.edu</a>
+    Jamunadevi G - <a href="mailto:jamunadevig.23aim@kongu.edu" class="footer-link">jamunadevig.23aim@kongu.edu</a> - 9043249887<br>
+    Jaya Harini S - <a href="mailto:jayaharinis.23aim@kongu.edu" class="footer-link">jayaharinis.23aim@kongu.edu</a><br>
+    Jayesh NK - <a href="mailto:jayeshnk.23aim@kongu.edu" class="footer-link">jayeshnk.23aim@kongu.edu</a>
   </div>
 
   <!-- Right: Copyright -->
-  <div style="text-align:right; line-height:1.5;">
+  <div class="footer-text-right">
     &copy; 2025 Tarjama. All rights reserved.<br>
     Designed and developed with 💖
   </div>
 
- </footer>
+</footer>
 
 
 
@@ -394,62 +442,95 @@
     const advTranslateBtn = document.getElementById('adv-translate-btn');
     const downloadReportBtn = document.getElementById('download-report-btn');
 
+    // Keep last uploaded/captured file and extract on demand
+    let pendingReceiptFile = null;
+
     function drawPreviewAndBoxes(b64png, boxes) {
       const img = new Image();
       img.onload = () => {
-        // Resize canvas to image
+        // Fit to container while preserving aspect ratio and max height
         const maxW = canvas.parentElement.clientWidth;
-        const scale = Math.min(1, maxW / img.width);
-        canvas.width = Math.floor(img.width * scale);
-        canvas.height = Math.floor(img.height * scale);
+        const maxH = Math.floor(window.innerHeight * 0.55);
+        let scale = Math.min(1, maxW / img.width);
+        if (img.height * scale > maxH) scale = maxH / img.height;
+        canvas.width = Math.max(1, Math.floor(img.width * scale));
+        canvas.height = Math.max(1, Math.floor(img.height * scale));
         ctx.clearRect(0,0,canvas.width,canvas.height);
+        
+        // Display the deskewed/preprocessed image
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        // Draw boxes
-        ctx.strokeStyle = '#22c55e';
-        ctx.lineWidth = 2;
+        
+        // Draw boxes with different colors based on field type
         boxes.forEach(b => {
+          // Set different colors for different types of fields
+          if (b.field_type === 'patient_name') {
+            ctx.strokeStyle = '#22c55e'; // Green for patient name
+          } else if (b.field_type === 'date') {
+            ctx.strokeStyle = '#3b82f6'; // Blue for date
+          } else if (b.field_type === 'doctor') {
+            ctx.strokeStyle = '#8b5cf6'; // Purple for doctor
+          } else if (b.field_type === 'hospital') {
+            ctx.strokeStyle = '#ef4444'; // Red for hospital
+          } else if (b.field_type === 'medicine') {
+            ctx.strokeStyle = '#f59e0b'; // Orange for medicines
+          } else {
+            ctx.strokeStyle = '#22c55e'; // Default green
+          }
+          
+          ctx.lineWidth = 2;
           ctx.strokeRect(b.x * scale, b.y * scale, b.w * scale, b.h * scale);
         });
+        
+        // Add a small indicator that this is the preprocessed image
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(5, 5, 120, 24);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '12px Arial';
+        ctx.fillText('Preprocessed Image', 10, 22);
       };
       img.src = 'data:image/png;base64,' + b64png;
     }
 
     function populateFields(fields) {
+      // Map extracted fields directly to the correct input boxes in the UI form
       fPatient.value = fields.patient_name || '';
       fDate.value = fields.date || '';
       fDoctor.value = fields.doctor || '';
       fHospital.value = fields.hospital || '';
       fMeds.value = (fields.medicines || []).join('\n');
       fNotes.value = fields.notes || '';
-    }
-
-    async function runAdvancedOCR(file) {
-      const formData = new FormData();
-      formData.append('image', file);
-      try {
-        advUploadBtn.disabled = true; cameraBtn.disabled = true; advStatus.textContent = 'Scanning…';
-        const resp = await fetch('/ocr_receipt', { method: 'POST', body: formData });
-        const data = await resp.json();
-        if (data.status === 'success') {
-          drawPreviewAndBoxes(data.preview_png_base64, data.boxes || []);
-          populateFields(data.fields || {});
-          // Place raw text into input area too for optional translation
-          inputText.value = data.raw_text || '';
-        } else {
-          const details = data.details ? `\nDetails: ${data.details}` : '';
-          alert((data.error || 'Advanced OCR failed') + details);
-        }
-      } catch (e) {
-        console.error(e); alert('Server error during advanced OCR');
-      } finally {
-        advUploadBtn.disabled = false; cameraBtn.disabled = false; advStatus.textContent = '';
-      }
+      
+      // Highlight fields that were successfully extracted
+      fPatient.style.backgroundColor = fields.patient_name ? '#f0fff4' : '';
+      fDate.style.backgroundColor = fields.date ? '#f0fff4' : '';
+      fDoctor.style.backgroundColor = fields.doctor ? '#f0fff4' : '';
+      fHospital.style.backgroundColor = fields.hospital ? '#f0fff4' : '';
+      fMeds.style.backgroundColor = fields.medicines && fields.medicines.length > 0 ? '#f0fff4' : '';
+      fNotes.style.backgroundColor = fields.notes ? '#f0fff4' : '';
     }
 
     advUploadBtn.addEventListener('click', () => advUploadInput.click());
     advUploadInput.addEventListener('change', async () => {
       if (!advUploadInput.files.length) return;
-      await runAdvancedOCR(advUploadInput.files[0]);
+      pendingReceiptFile = advUploadInput.files[0];
+      // Quick preview of selected image (no OCR yet)
+      try {
+        const url = URL.createObjectURL(pendingReceiptFile);
+        const img = new Image();
+        img.onload = () => {
+          const maxW = canvas.parentElement.clientWidth;
+          const maxH = Math.floor(window.innerHeight * 0.55);
+          let scale = Math.min(1, maxW / img.width);
+          if (img.height * scale > maxH) scale = maxH / img.height;
+          canvas.width = Math.max(1, Math.floor(img.width * scale));
+          canvas.height = Math.max(1, Math.floor(img.height * scale));
+          ctx.clearRect(0,0,canvas.width,canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+        };
+        img.src = url;
+      } catch {}
+      advStatus.textContent = 'File ready. Click Extract to process.';
       advUploadInput.value = '';
     });
 
@@ -480,7 +561,13 @@
       tempCanvas.width = videoEl.videoWidth; tempCanvas.height = videoEl.videoHeight;
       const tctx = tempCanvas.getContext('2d');
       tctx.drawImage(videoEl, 0, 0);
-      tempCanvas.toBlob(async (blob) => { if (blob) await runAdvancedOCR(new File([blob], 'capture.png', { type: 'image/png' })); }, 'image/png');
+      tempCanvas.toBlob(async (blob) => {
+        if (blob) {
+          pendingReceiptFile = new File([blob], 'capture.png', { type: 'image/png' });
+          // preview is already on canvas
+          advStatus.textContent = 'Capture ready. Click Extract to process.';
+        }
+      }, 'image/png');
     });
 
     // Translate fields into English summary
@@ -504,6 +591,77 @@
         if (data.status === 'success') fTranslation.value = data.translated_text; else alert(data.error || 'Translation failed');
       } catch (e) { console.error(e); alert('Server error during translation'); }
       finally { advTranslateBtn.disabled = false; advTranslateBtn.textContent = 'Translate Fields'; }
+    });
+
+    // Export report
+    // Field Extraction button
+    const simpleExtractBtn = document.getElementById('simple-extract-btn');
+
+    simpleExtractBtn.addEventListener('click', async () => {
+      if (!pendingReceiptFile) { alert('Please upload or capture a receipt first.'); return; }
+
+      const formData = new FormData();
+      formData.append('image', pendingReceiptFile);
+
+      try {
+        simpleExtractBtn.disabled = true;
+        simpleExtractBtn.textContent = 'Extracting…';
+
+        const response = await fetch('/extract_fields', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.status === 'success') {
+          // Populate form fields with extracted data
+          fPatient.value = data.fields['Patient Name'] || '';
+          fDate.value = data.fields['Date'] || '';
+          fDoctor.value = data.fields['Doctor'] || '';
+          fHospital.value = data.fields['Hospital/Clinic'] || '';
+          fMeds.value = (data.fields['Medicines'] || []).join('\n');
+          fNotes.value = data.fields['Notes'] || '';
+
+          // Show preview if available
+          if (data.preview_png_base64) {
+            const img = new Image();
+            img.onload = () => {
+              const maxW = canvas.parentElement.clientWidth;
+              const maxH = Math.floor(window.innerHeight * 0.55);
+              let scale = Math.min(1, maxW / img.width);
+              if (img.height * scale > maxH) scale = maxH / img.height;
+              canvas.width = Math.max(1, Math.floor(img.width * scale));
+              canvas.height = Math.max(1, Math.floor(img.height * scale));
+              ctx.clearRect(0,0,canvas.width,canvas.height);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            img.src = 'data:image/png;base64,' + data.preview_png_base64;
+          }
+
+          // Highlight successfully extracted fields
+          fPatient.style.backgroundColor = data.fields['Patient Name'] ? '#f0fff4' : '';
+          fDate.style.backgroundColor = data.fields['Date'] ? '#f0fff4' : '';
+          fDoctor.style.backgroundColor = data.fields['Doctor'] ? '#f0fff4' : '';
+          fHospital.style.backgroundColor = data.fields['Hospital/Clinic'] ? '#f0fff4' : '';
+          fMeds.style.backgroundColor = data.fields['Medicines'] && data.fields['Medicines'].length > 0 ? '#f0fff4' : '';
+          fNotes.style.backgroundColor = data.fields['Notes'] ? '#f0fff4' : '';
+
+          advStatus.textContent = 'Fields extracted successfully.';
+          setTimeout(() => {
+            advStatus.textContent = '';
+          }, 3000);
+
+        } else {
+          alert(data.error || 'Extraction failed');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Server error during extraction');
+      } finally {
+        simpleExtractBtn.disabled = false;
+        simpleExtractBtn.textContent = 'Extract Fields';
+      }
     });
 
     // Export report

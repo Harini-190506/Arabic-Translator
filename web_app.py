@@ -9,17 +9,24 @@ import os
 import subprocess
 import shutil
 import speech_recognition as sr
-from PIL import Image
+from PIL import Image, ImageOps
 import pytesseract
+import numpy as np
+from io import BytesIO
+import base64
+try:
+    from rapidfuzz import process as rf_process, fuzz as rf_fuzz  # type: ignore
+except Exception:
+    rf_process = None
+    rf_fuzz = None
+
+# Set Tesseract path explicitly
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
 from werkzeug.utils import secure_filename
 import cv2
-import numpy as np
-import base64
-from io import BytesIO
-
 app = Flask(__name__)
 
-# ---------------- CONFIG ----------------
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg', 'm4a', 'flac', 'aac', 'webm'}
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'bmp', 'tif', 'tiff', 'webp'}
@@ -34,7 +41,8 @@ CORS(app, resources={
     r"/translate": {"origins": "*"},
     r"/transcribe": {"origins": "*"},
     r"/ocr": {"origins": "*"},
-    r"/ocr_receipt": {"origins": "*"}
+    r"/ocr_receipt": {"origins": "*"},
+    r"/extract_fields": {"origins": "*"}
 })
 
 logging.basicConfig(
@@ -51,24 +59,80 @@ else:
     logger.warning("⚠️ ffmpeg not found on PATH. Only WAV/FLAC inputs will be processed without conversion.")
 
 # Check Tesseract availability once at startup
-TESSERACT_AVAILABLE = shutil.which('tesseract') is not None
+TESSERACT_AVAILABLE = shutil.which('tesseract') is not None or os.path.exists(pytesseract.pytesseract.tesseract_cmd)
 if TESSERACT_AVAILABLE:
-    logger.info("✅ Tesseract OCR detected on PATH")
+    logger.info("✅ Tesseract OCR detected")
 else:
-    logger.warning("⚠️ Tesseract OCR not found on PATH. /ocr endpoint will fail until installed.")
+    logger.warning("⚠️ Tesseract OCR not found. /ocr endpoint will fail until installed.")
 
-# ---------------- LANGUAGES ----------------
 LANGUAGES = {
+    # Global
     "English": "en",
-    "French": "fr",
-    "German": "de",
-    "Tamil": "ta",
-    "Hindi": "hi",
-    "Spanish": "es",
     "Arabic": "ar",
+    "French": "fr",
+    "Spanish": "es",
+    "Portuguese": "pt",
+    "German": "de",
+    "Italian": "it",
+    "Dutch": "nl",
+    "Russian": "ru",
+    "Ukrainian": "uk",
+    "Polish": "pl",
+    "Czech": "cs",
+    "Slovak": "sk",
+    "Slovenian": "sl",
+    "Bulgarian": "bg",
+    "Romanian": "ro",
+    "Hungarian": "hu",
+    "Greek": "el",
+    "Turkish": "tr",
+    "Persian": "fa",
+    "Urdu": "ur",
+    # Nordics
+    "Swedish": "sv",
+    "Norwegian": "no",
+    "Danish": "da",
+    "Finnish": "fi",
+    # Asia
+    "Chinese (Simplified)": "zh-CN",
+    "Chinese (Traditional)": "zh-TW",
     "Japanese": "ja",
     "Korean": "ko",
-    "Russian": "ru"
+    "Thai": "th",
+    "Vietnamese": "vi",
+    "Indonesian": "id",
+    "Malay": "ms",
+    "Filipino": "tl",
+    # South Asia
+    "Hindi": "hi",
+    "Bengali": "bn",
+    "Punjabi": "pa",
+    "Gujarati": "gu",
+    "Marathi": "mr",
+    "Urdu (Pakistan)": "ur",
+    "Tamil": "ta",
+    "Telugu": "te",
+    "Kannada": "kn",
+    "Malayalam": "ml",
+    "Sinhala": "si",
+    "Nepali": "ne",
+    # Africa
+    "Swahili": "sw",
+    "Amharic": "am",
+    # Others
+    "Hebrew": "he",
+    "Azerbaijani": "az",
+    "Kazakh": "kk",
+    "Uzbek": "uz",
+    "Georgian": "ka",
+    "Armenian": "hy",
+    "Albanian": "sq",
+    "Serbian": "sr",
+    "Croatian": "hr",
+    "Bosnian": "bs",
+    "Lithuanian": "lt",
+    "Latvian": "lv",
+    "Estonian": "et"
 }
 
 # ---------------- HELPERS ----------------
@@ -107,17 +171,28 @@ def four_point_transform(image, pts):
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
     return warped
 
+def _read_image_exif_oriented(image_path):
+    """Read image with EXIF orientation applied, return OpenCV BGR array."""
+    pil = Image.open(image_path)
+    try:
+        pil = ImageOps.exif_transpose(pil)
+    except Exception:
+        pass
+    return cv2.cvtColor(np.array(pil), cv2.COLOR_RGB2BGR)
+
 def preprocess_receipt(image_path):
-    image = cv2.imread(image_path)
+    """Return a cleaned image suitable for OCR plus multiple enhanced variants."""
+    image = _read_image_exif_oriented(image_path)
     if image is None:
         raise ValueError("Could not read image")
-    orig = image.copy()
-    ratio = 1.0
+
     # Resize for consistent processing
-    target_height = 900
+    target_height = 1600
     if image.shape[0] > target_height:
-        ratio = image.shape[0] / target_height
-        image = cv2.resize(image, (int(image.shape[1] / ratio), target_height))
+        scale = target_height / image.shape[0]
+        image = cv2.resize(image, (int(image.shape[1] * scale), target_height))
+
+    # Perspective correction (same as before)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blur = cv2.bilateralFilter(gray, 11, 17, 17)
     edged = cv2.Canny(blur, 30, 200)
@@ -131,17 +206,246 @@ def preprocess_receipt(image_path):
             screenCnt = approx
             break
     if screenCnt is not None:
-        warped = four_point_transform(image, screenCnt.reshape(4, 2))
+        image = four_point_transform(image, screenCnt.reshape(4, 2))
+
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Apply noise removal (median blur)
+    median = cv2.medianBlur(gray, 3)
+    
+    # Deskew using minAreaRect
+    coords = np.column_stack(np.where(median < 200))
+    angle = 0.0
+    if coords.size > 0:
+        rect = cv2.minAreaRect(coords)
+        angle = rect[-1]
+        if angle < -45:
+            angle = -(90 + angle)
+        else:
+            angle = -angle
+    # Fallback to Tesseract OSD if minAreaRect fails
+    if abs(angle) <= 0.5:
+        try:
+            osd = pytesseract.image_to_osd(median)
+            import re as _re
+            m = _re.search(r"Rotate: (\d+)", osd)
+            if m:
+                rdeg = int(m.group(1))
+                if rdeg in (90,180,270):
+                    angle = -rdeg
+        except Exception:
+            pass
+
+    # Rotate the receipt upright if needed
+    if abs(angle) > 0.5:
+        (h, w) = image.shape[:2]
+        M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
+        image = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+        # Update grayscale and median blur after rotation
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        median = cv2.medianBlur(gray, 3)
+
+    # Apply thresholding (OTSU) for better text contrast
+    otsu = cv2.threshold(median, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    
+    # Additional processing for variants
+    # Sharpen (unsharp mask)
+    gblur = cv2.GaussianBlur(gray, (0, 0), sigmaX=1.0)
+    sharp = cv2.addWeighted(gray, 1.5, gblur, -0.5, 0)
+
+    # Adaptive thresholding as another variant
+    adaptive = cv2.adaptiveThreshold(median, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 15)
+
+    # Morphology to separate lines (helps OCR grouping)
+    kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (25, 1))
+    sep = cv2.morphologyEx(otsu, cv2.MORPH_OPEN, kernel_h)
+
+    # Small noise removal
+    clean = cv2.morphologyEx(otsu, cv2.MORPH_OPEN, np.ones((1, 1), np.uint8))
+
+    # Return primary and variants for strategy OCR
+    variants = [clean, adaptive, sharp, otsu, sep]
+    return variants[0], variants
+
+GENERAL_CONFIG = "--oem 1 --psm 6"
+DIGIT_CONFIG = "--oem 1 --psm 7 -c tessedit_char_whitelist=0123456789.,₹$SAR€"
+
+def ocr_with_strategies(img_variants):
+    """Run OCR with multiple PSMs and configs; return best full text and boxes."""
+    best_text = ""
+    best_len = 0
+    all_boxes = []
+    best_conf = -1.0
+    
+    # Ensure we use the preprocessed deskewed image (first variant) with the general config first
+    deskewed_img = img_variants[0]
+    d = pytesseract.image_to_data(deskewed_img, lang='ara+eng', config=GENERAL_CONFIG, output_type=pytesseract.Output.DICT)
+    lines = _reconstruct_lines_from_ocr(d)
+    text = _normalize_arabic_digits('\n'.join(lines))
+    # average confidence
+    confs = [float(c) for c in d['conf'] if c not in ('-1', '')]
+    avg_conf = sum(confs)/len(confs) if confs else -1
+    best_len = len(text)
+    best_text = text
+    best_conf = avg_conf
+    # capture boxes for this best run
+    all_boxes = []
+    for i in range(len(d['text'])):
+        t = (d['text'][i] or '').strip()
+        if not t:
+            continue
+        x, y, w, h = d['left'][i], d['top'][i], d['width'][i], d['height'][i]
+        conf = float(d['conf'][i]) if d['conf'][i] not in ('-1', '') else -1
+        all_boxes.append({'x': x, 'y': y, 'w': w, 'h': h, 'text': t, 'conf': conf})
+    
+    # Try other variants and configurations if needed
+    for variant in img_variants[1:]:
+        for cfg in (GENERAL_CONFIG, "--oem 1 --psm 4"):
+            d = pytesseract.image_to_data(variant, lang='ara+eng', config=cfg, output_type=pytesseract.Output.DICT)
+            lines = _reconstruct_lines_from_ocr(d)
+            text = _normalize_arabic_digits('\n'.join(lines))
+            # average confidence
+            confs = [float(c) for c in d['conf'] if c not in ('-1', '')]
+            avg_conf = sum(confs)/len(confs) if confs else -1
+            if len(text) > best_len or (len(text) >= best_len*0.9 and avg_conf > best_conf):
+                best_len = len(text)
+                best_text = text
+                best_conf = avg_conf
+                # capture boxes for this best run
+                all_boxes = []
+                for i in range(len(d['text'])):
+                    t = (d['text'][i] or '').strip()
+                    if not t:
+                        continue
+                    x, y, w, h = d['left'][i], d['top'][i], d['width'][i], d['height'][i]
+                    conf = float(d['conf'][i]) if d['conf'][i] not in ('-1', '') else -1
+                    all_boxes.append({'x': x, 'y': y, 'w': w, 'h': h, 'text': t, 'conf': conf})
+
+        # Specialized passes
+        price_cfg = DIGIT_CONFIG
+        _ = pytesseract.image_to_string(variant, lang='eng', config=price_cfg)
+        name_cfg = "--psm 7 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz \n.:-"
+        _ = pytesseract.image_to_string(variant, lang='eng', config=name_cfg)
+
+    # Optional EasyOCR fallback
+    try:
+        import easyocr  # type: ignore
+    except Exception:
+        logger.warning("easyocr not installed: OCR fallback disabled")
     else:
-        warped = image
-    # Convert to grayscale and enhance
-    gray2 = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
-    # Adaptive threshold improves text clarity
-    thr = cv2.adaptiveThreshold(gray2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 15)
-    # Morphology to remove small noise
-    kernel = np.ones((1, 1), np.uint8)
-    clean = cv2.morphologyEx(thr, cv2.MORPH_OPEN, kernel)
-    return clean
+        try:
+            reader = easyocr.Reader(['en', 'ar'], gpu=False)
+            result = reader.readtext(img_variants[0])
+            easy_lines = [r[1] for r in result]
+            easy_text = _normalize_arabic_digits('\n'.join(easy_lines))
+            if len(easy_text) > best_len * 0.7 and len(easy_text) > best_len and best_conf < 50:
+                best_text = easy_text
+        except Exception:
+            pass
+
+    return best_text, all_boxes
+
+def analyze_layout_from_boxes(boxes):
+    """Heuristic: determine header/top lines, items, totals by vertical bands.
+    Bands are computed from box coordinates themselves to avoid size mismatch.
+    """
+    if not boxes:
+        return [], [], []
+    max_y = max((b['y'] + b['h']) for b in boxes if 'y' in b and 'h' in b)
+    if max_y <= 0:
+        return [], [], []
+    top_y = max_y * 0.2
+    bottom_y = max_y * 0.8
+    header_words = [b['text'] for b in boxes if b['y'] <= top_y]
+    total_words = [b['text'] for b in boxes if b['y'] >= bottom_y]
+    middle_words = [b['text'] for b in boxes if top_y < b['y'] < bottom_y]
+    return header_words, middle_words, total_words
+
+def fuzzy_fix_keyword(word):
+    if not rf_process:
+        return word
+    choices = ["TOTAL","Grand Total","Amount Due","Balance Due","Subtotal","VAT","Tax","Hospital","Clinic"]
+    m = rf_process.extractOne(word, choices, scorer=rf_fuzz.WRatio)
+    if m and m[1] >= 85:
+        return m[0]
+    return word
+
+def extract_fields_advanced(full_text, boxes, image_height=None):
+    """Combine regex + layout + fuzzy to extract store/date/items/totals."""
+    fields = parse_medical_fields(full_text)
+    import re
+    lines = [ln.strip() for ln in full_text.split('\n') if ln.strip()]
+    # Fuzzy correct obvious headings in text
+    if rf_process:
+        lines = [fuzzy_fix_keyword(ln) for ln in lines]
+    # Layout hints
+    header_words, middle_words, total_words = analyze_layout_from_boxes(boxes)
+    header_line = ' '.join(header_words[:30]).strip()
+    if header_line:
+        # Try to split header into a probable name and hospital/clinic
+        if not fields.get('hospital'):
+            fields['hospital'] = header_line[:120]
+        # Patient name heuristics near top
+        name_patterns = [r"\b(Name|Patient Name)\b\s*[:：-]?\s*(.+)", r"اسم\s*المريض\s*[:：-]?\s*(.+)", r"\bالاسم\b\s*[:：-]?\s*(.+)"]
+        for p in name_patterns:
+            m = re.search(p, full_text, re.IGNORECASE)
+            if m:
+                cand = m.group(len(m.groups()))
+                fields['patient_name'] = cand.split('\n')[0][:80].strip()
+                break
+    # Date robust regex
+    date_re = re.compile(r"(\b\d{1,2}[\-/]\d{1,2}[\-/]\d{2,4}\b|\b\d{4}[\-/]\d{1,2}[\-/]\d{1,2}\b|\b\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4}\b)")
+    for ln in lines:
+        m = date_re.search(ln)
+        if m:
+            # reject noisy context likely not a date
+            if not re.search(r"\b(pcs|piece|register|store|bo\d+)\b", ln, re.IGNORECASE):
+                fields['date'] = m.group(0)
+            break
+    # Items from middle band (exclude totals keywords)
+    price_re = re.compile(r"(\d+[.,]\d{2}|SAR\s*\d+|\d+\s*SAR|₹\s*\d+|\$\s*\d+|ريال)\b", re.IGNORECASE)
+    item_lines = []
+    for ln in middle_words:
+        t = str(ln)
+        if price_re.search(t) and any(c.isalpha() for c in t):
+            if re.search(r"\b(total|amount|balance|vat|tax)\b", t, re.IGNORECASE):
+                continue
+            item_lines.append(t)
+    if item_lines:
+        fields['medicines'] = item_lines[:120]
+    # Totals from bottom band or text
+    totals = []
+    totals_keys = ["TOTAL","Grand Total","Amount Due","Balance Due","Subtotal","VAT","Tax"]
+    for w in total_words + [' '.join(lines[-6:])]:
+        for k in totals_keys:
+            if k.lower() in str(w).lower():
+                # require amount on the same line
+                m = re.search(r"(?:₹|\$|SAR)?\s*\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})\b", str(w))
+                if m:
+                    totals.append(f"{k}: {m.group(0).strip()}")
+    if totals:
+        fields['notes'] = ' | '.join(dict.fromkeys(totals))
+    
+    # Add field_type to boxes for better visualization in frontend
+    for box in boxes:
+        box_text = box.get('text', '').lower()
+        
+        # Identify field types based on content
+        if fields.get('patient_name') and fields['patient_name'].lower() in box_text:
+            box['field_type'] = 'patient_name'
+        elif fields.get('date') and fields['date'].lower() in box_text:
+            box['field_type'] = 'date'
+        elif fields.get('doctor') and fields['doctor'].lower() in box_text:
+            box['field_type'] = 'doctor'
+        elif fields.get('hospital') and fields['hospital'].lower() in box_text:
+            box['field_type'] = 'hospital'
+        elif any(med.lower() in box_text for med in fields.get('medicines', []) if med):
+            box['field_type'] = 'medicine'
+        elif any(k.lower() in box_text for k in totals_keys):
+            box['field_type'] = 'total'
+    
+    return fields
 
 def image_to_base64(img_array):
     pil_img = Image.fromarray(img_array)
@@ -149,8 +453,64 @@ def image_to_base64(img_array):
     pil_img.save(buffer, format='PNG')
     return base64.b64encode(buffer.getvalue()).decode('utf-8')
 
+def _reconstruct_lines_from_ocr(ocr_dict):
+    """Group pytesseract image_to_data output into full text lines in reading order."""
+    try:
+        n = len(ocr_dict.get('text', []))
+        rows = []
+        for i in range(n):
+            txt = (ocr_dict['text'][i] or '').strip()
+            if txt == '':
+                continue
+            rows.append({
+                'block': int(ocr_dict['block_num'][i]),
+                'par': int(ocr_dict['par_num'][i]),
+                'line': int(ocr_dict['line_num'][i]),
+                'word': int(ocr_dict['word_num'][i]),
+                'left': int(ocr_dict['left'][i]),
+                'top': int(ocr_dict['top'][i]),
+                'text': txt
+            })
+        # sort by block, paragraph, line, then x
+        rows.sort(key=lambda r: (r['block'], r['par'], r['line'], r['left']))
+        lines = []
+        current_key = None
+        current_parts = []
+        for r in rows:
+            key = (r['block'], r['par'], r['line'])
+            if key != current_key:
+                if current_parts:
+                    lines.append(' '.join(current_parts))
+                current_key = key
+                current_parts = [r['text']]
+            else:
+                current_parts.append(r['text'])
+        if current_parts:
+            lines.append(' '.join(current_parts))
+        # Deduplicate and keep order
+        seen = set()
+        unique_lines = []
+        for ln in lines:
+            if ln in seen:
+                continue
+            seen.add(ln)
+            unique_lines.append(ln)
+        return unique_lines
+    except Exception:
+        # Fallback to joining words
+        return [w for w in ocr_dict.get('text', []) if (w or '').strip()]
+
+def _normalize_arabic_digits(s: str) -> str:
+    """Convert Arabic-Indic digits to ASCII digits so regex works consistently."""
+    trans = str.maketrans(
+        '٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹',
+        '01234567890123456789'
+    )
+    return s.translate(trans)
+
 def parse_medical_fields(text):
     import re
+    from datetime import datetime
     data = {
         'patient_name': '',
         'date': '',
@@ -159,29 +519,107 @@ def parse_medical_fields(text):
         'medicines': [],
         'notes': ''
     }
-    # Simple heuristics for Arabic/English receipts
-    # Date
-    m = re.search(r"(\d{1,2}[\-/]\d{1,2}[\-/]\d{2,4}|\d{4}[\-/]\d{1,2}[\-/]\d{1,2})", text)
-    if m: data['date'] = m.group(0)
-    # Patient keywords
-    for kw in [r"اسم\s*المريض\s*[:：]?\s*(.+)", r"Patient\s*Name\s*[:：]?\s*(.+)"]:
-        m = re.search(kw, text, re.IGNORECASE)
-        if m:
-            data['patient_name'] = m.group(1).split('\n')[0].strip()
+
+    # Normalize spacing
+    normalized = re.sub(r"\t+", " ", text)
+    lines = [ln.strip() for ln in normalized.splitlines() if ln.strip()]
+
+    # Helper: normalize date to YYYY-MM-DD if possible
+    def _normalize_date(s: str) -> str:
+        s = s.strip()
+        for fmt in ("%d-%m-%Y", "%d/%m/%Y", "%Y-%m-%d", "%Y/%m/%d", "%d-%m-%y", "%d/%m/%y", "%d %b %Y", "%d %B %Y"):
+            try:
+                return datetime.strptime(s, fmt).strftime("%Y-%m-%d")
+            except Exception:
+                continue
+        return s
+
+    # Patient Name → first line with ≥2 words (not doctor/hospital)
+    for i, ln in enumerate(lines[:10]):  # Check first 10 lines
+        words = ln.split()
+        if len(words) >= 2 and not any(keyword in ln.lower() for keyword in ['dr', 'doctor', 'hospital', 'clinic', 'invoice', 'receipt']):
+            data['patient_name'] = ln
             break
-    # Doctor/Hospital
-    m = re.search(r"(Dr\.?\s*[A-Za-z\u0621-\u064A]+[\sA-Za-z\u0621-\u064A]*)", text)
-    if m: data['doctor'] = m.group(1)
-    m = re.search(r"(Hospital|Clinic|مستشفى|عيادة)[^\n]*", text, re.IGNORECASE)
-    if m: data['hospital'] = m.group(0)
-    # Medicines: naive line-based parse for lines with mg/ml or Arabic units
+
+    # Date → regex: \d{2}[/-]\d{2}[/-]\d{4}
+    date_found = ''
+    date_pat = re.compile(r"(\b\d{1,2}[\-/]\d{1,2}[\-/]\d{2,4}\b|\b\d{4}[\-/]\d{1,2}[\-/]\d{1,2}\b)")
+    for ln in lines:
+        m = date_pat.search(ln)
+        if m:
+            date_found = _normalize_date(m.group(0))
+            break
+    if date_found:
+        data['date'] = date_found
+
+    # Doctor → any line containing "Dr" or "Doctor"
+    for ln in lines:
+        if re.search(r"\b(Dr|Doctor|Dr\.|دكتور)\b", ln, re.IGNORECASE):
+            data['doctor'] = ln.strip()
+            break
+
+    # Hospital/Clinic → fuzzy match "hospital" or "clinic"
+    if rf_process:  # Check if rapidfuzz is available
+        hospital_found = False
+        for ln in lines:
+            # Use rapidfuzz for fuzzy matching
+            match = rf_process.extractOne(ln.lower(), ["hospital", "clinic", "medical center", "مستشفى", "عيادة"], 
+                                        scorer=rf_fuzz.WRatio)
+            if match and match[1] >= 70:  # 70% similarity threshold
+                data['hospital'] = ln.strip()
+                hospital_found = True
+                break
+        
+        # If no match found, try to infer from header lines
+        if not hospital_found:
+            header_lines = lines[:5]
+            for ln in header_lines:
+                if len(ln.split()) <= 5 and not re.search(r"\b(invoice|receipt|bill|patient|doctor)\b", ln.lower()):
+                    data['hospital'] = ln.strip()
+                    break
+    else:
+        # Fallback if rapidfuzz is not available
+        m = re.search(r"\b(Hospital|Clinic|Medical Center|مستشفى|عيادة)[^\n]*", normalized, re.IGNORECASE)
+        if m:
+            data['hospital'] = m.group(0).strip()
+
+    # Medicines → lines that are not totals/amounts/bills
     meds = []
-    for line in text.splitlines():
-        if re.search(r"(mg|ml|ملجم|ملغم|قرص|tablets?|caps?|ml)\b", line, re.IGNORECASE):
-            meds.append(line.strip())
-    data['medicines'] = meds
-    # Notes
-    data['notes'] = ''
+    # Skip lines that look like totals or headers
+    skip_patterns = [r"\b(total|subtotal|amount|balance|vat|tax|invoice|receipt)\b", 
+                    r"\b(الإجمالي|المجموع|ضريبة|فاتورة)\b"]
+    
+    # Find potential medicine lines
+    for ln in lines:
+        if len(ln.split()) >= 2:  # At least 2 words
+            skip = False
+            for pattern in skip_patterns:
+                if re.search(pattern, ln, re.IGNORECASE):
+                    skip = True
+                    break
+            if not skip:
+                # Check if it looks like a medicine entry
+                if re.search(r"[A-Za-z]{3,}", ln) and not ln == data['patient_name'] and not ln == data['doctor'] and not ln == data['hospital']:
+                    meds.append(ln)
+    
+    if meds:
+        data['medicines'] = meds[:100]
+
+    # Notes → leftover lines after the above
+    leftover_notes = []
+    for ln in lines:
+        if (ln != data['patient_name'] and 
+            ln != data['doctor'] and 
+            ln != data['hospital'] and 
+            ln not in data['medicines'] and
+            ln != data['date']):
+            # Check if it's a total or important information
+            if re.search(r"\b(total|amount|balance|due|vat|tax)\b", ln, re.IGNORECASE):
+                leftover_notes.append(ln)
+    
+    if leftover_notes:
+        data['notes'] = "\n".join(leftover_notes[:10])  # Limit to 10 lines
+
     return data
 
 def convert_to_wav(input_path, output_path):
@@ -414,22 +852,11 @@ def ocr_receipt_advanced():
         temp_path = os.path.join(temp_dir, filename)
         f.save(temp_path)
     try:
-        clean = preprocess_receipt(temp_path)
-        # Run OCR with Arabic + English
-        data = pytesseract.image_to_data(clean, lang='ara+eng', config='--psm 6', output_type=pytesseract.Output.DICT)
-        boxes = []
-        full_text_lines = []
-        for i in range(len(data['text'])):
-            txt = data['text'][i].strip()
-            if not txt:
-                continue
-            x, y, w, h = data['left'][i], data['top'][i], data['width'][i], data['height'][i]
-            conf = float(data['conf'][i]) if data['conf'][i] not in ('-1', '') else -1
-            boxes.append({'x': x, 'y': y, 'w': w, 'h': h, 'text': txt, 'conf': conf})
-            full_text_lines.append(txt)
-        full_text = '\n'.join(full_text_lines)
-        fields = parse_medical_fields(full_text)
-        preview_b64 = image_to_base64(clean)
+        clean, variants = preprocess_receipt(temp_path)
+        full_text, boxes = ocr_with_strategies(variants)
+        h = variants[0].shape[0]
+        fields = extract_fields_advanced(full_text, boxes, h)
+        preview_b64 = image_to_base64(variants[0])
         return jsonify({'status': 'success', 'preview_png_base64': preview_b64, 'boxes': boxes, 'fields': fields, 'raw_text': full_text})
     except Exception as e:
         logger.error(f"Advanced OCR failed: {e}")
@@ -535,5 +962,75 @@ def export_report():
         logger.error(f"Export failed: {e}")
         return jsonify({'error': 'Export failed', 'details': str(e)}), 500
 
+@app.route('/extract_fields', methods=['POST'])
+def extract_fields_endpoint():
+    if not TESSERACT_AVAILABLE:
+        return jsonify({'error': 'Tesseract OCR is not installed', 'status': 'error'}), 500
+    
+    f = request.files.get('image') or request.files.get('file') or request.files.get('photo')
+    if f is None:
+        return jsonify({'error': 'No file provided', 'status': 'error'}), 400
+    
+    filename = secure_filename(f.filename or 'upload.png')
+    ext = os.path.splitext(filename)[1].lower().lstrip('.')
+    
+    if not allowed_image_file(filename):
+        return jsonify({'error': 'Invalid image type', 'details': f"Allowed: {', '.join(sorted(ALLOWED_IMAGE_EXTENSIONS))}", 'status': 'error'}), 400
+    
+    temp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp_images')
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_path = os.path.join(temp_dir, filename)
+    
+    try:
+        f.save(temp_path)
+        
+        # Import and use the extract_fields function from extracter.py
+        from extracter import extract_fields
+        fields = extract_fields(temp_path)
+        
+        # Convert image to base64 for preview
+        preview_img = cv2.imread(temp_path)
+        if preview_img is not None:
+            preview_b64 = image_to_base64(preview_img)
+        else:
+            preview_b64 = None
+        
+        return jsonify({
+            'status': 'success', 
+            'fields': fields,
+            'preview_png_base64': preview_b64
+        })
+        
+    except Exception as e:
+        logger.error(f"Field extraction failed: {e}")
+        return jsonify({'error': 'Field extraction failed', 'details': str(e), 'status': 'error'}), 500
+    finally:
+        try:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+        except Exception:
+            pass
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    import socket
+    # Try to find an available port starting from 5000
+    def find_available_port(start_port=5000):
+        for port in range(start_port, start_port + 10):
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.bind(('', port))
+                    return port
+            except OSError:
+                continue
+        return start_port  # fallback to original port
+
+    port = find_available_port()
+    print(f"Starting server on port {port}")
+
+    app.run(
+        host='127.0.0.1',
+        port=port,
+        debug=True,
+        use_reloader=False,  # Disable reloader to avoid socket conflicts
+        threaded=True
+    )
