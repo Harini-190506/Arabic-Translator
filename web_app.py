@@ -66,73 +66,12 @@ else:
     logger.warning("⚠️ Tesseract OCR not found. /ocr endpoint will fail until installed.")
 
 LANGUAGES = {
-    # Global
-    "English": "en",
-    "Arabic": "ar",
-    "French": "fr",
-    "Spanish": "es",
-    "Portuguese": "pt",
-    "German": "de",
-    "Italian": "it",
-    "Dutch": "nl",
-    "Russian": "ru",
-    "Ukrainian": "uk",
-    "Polish": "pl",
-    "Czech": "cs",
-    "Slovak": "sk",
-    "Slovenian": "sl",
-    "Bulgarian": "bg",
-    "Romanian": "ro",
-    "Hungarian": "hu",
-    "Greek": "el",
-    "Turkish": "tr",
-    "Persian": "fa",
-    "Urdu": "ur",
-    # Nordics
-    "Swedish": "sv",
-    "Norwegian": "no",
-    "Danish": "da",
-    "Finnish": "fi",
-    # Asia
-    "Chinese (Simplified)": "zh-CN",
-    "Chinese (Traditional)": "zh-TW",
-    "Japanese": "ja",
-    "Korean": "ko",
-    "Thai": "th",
-    "Vietnamese": "vi",
-    "Indonesian": "id",
-    "Malay": "ms",
-    "Filipino": "tl",
-    # South Asia
-    "Hindi": "hi",
-    "Bengali": "bn",
-    "Punjabi": "pa",
-    "Gujarati": "gu",
-    "Marathi": "mr",
-    "Urdu (Pakistan)": "ur",
     "Tamil": "ta",
-    "Telugu": "te",
-    "Kannada": "kn",
-    "Malayalam": "ml",
-    "Sinhala": "si",
-    "Nepali": "ne",
-    # Africa
-    "Swahili": "sw",
-    "Amharic": "am",
-    # Others
-    "Hebrew": "he",
-    "Azerbaijani": "az",
-    "Kazakh": "kk",
-    "Uzbek": "uz",
-    "Georgian": "ka",
-    "Armenian": "hy",
-    "Albanian": "sq",
-    "Serbian": "sr",
-    "Croatian": "hr",
-    "Bosnian": "bs",
-    "Lithuanian": "lt",
-    "Latvian": "lv",
-    "Estonian": "et"
+    "English": "en",
+    "Hindi": "hi",
+    "French": "fr",
+    "German": "de",
+    "Japanese": "ja"
 }
 
 # ---------------- HELPERS ----------------
